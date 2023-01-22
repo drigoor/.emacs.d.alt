@@ -199,3 +199,78 @@
 ;; scroll
 (global-set-key "\M-i" "\C-u1\M-v")
 (global-set-key "\M-k" "\C-u1\C-v")
+
+;; -----------------------------------------------------------------------------
+
+(use-package ahk-mode
+  :config
+  (setq ahk-indentation 2))
+
+(use-package crux
+  :bind
+  (("C-a"        . crux-move-beginning-of-line)
+   ("C-S-k"      . crux-kill-whole-line)
+   ("C-c k"      . crux-kill-other-buffers)
+   ("C-M-z"      . crux-indent-defun)
+   ("C-c d"      . crux-duplicate-current-line-or-region)
+   ("C-c M-d"    . crux-duplicate-and-comment-current-line-or-region)
+   ("C-c r"      . crux-rename-buffer-and-file)
+   ([(M return)] . crux-smart-open-line)))
+
+(use-package anzu
+  :bind
+  (("<remap> <query-replace>" . 'anzu-query-replace)
+   ("<remap> <query-replace-regexp>" . 'anzu-query-replace-regexp))
+  :config
+  (global-anzu-mode t)
+  (set-face-foreground 'anzu-mode-line "#FF6F00"))
+
+;; -- magit --------------------------------------------------------------------
+
+(defun magit-status-around (orig-fun &rest args)
+  (window-configuration-to-register 'x)
+  (delete-other-windows)
+  (apply orig-fun args))
+
+;; references:
+;; https://github.com/bradwright/emacs-d/blob/master/packages/init-magit.el
+;; http://whattheemacsd.com/setup-magit.el-01.html
+(use-package magit
+  :bind (("C-x g" . magit-status)
+         ("C-c b" . magit-blame)
+         :map magit-status-mode-map
+         ("q" . magit-quit-session))
+  :config
+  (advice-add 'magit-status :around #'magit-status-around) ; check: https://www.gnu.org/software/emacs/manual/html_node/elisp/Porting-old-advice.html
+  (defun magit-quit-session ()
+    (interactive)
+    (kill-buffer)
+    (jump-to-register 'x))
+  (setq magit-display-buffer-function 'magit-display-buffer-fullframe-status-v1))
+
+
+;; -- lisp ---------------------------------------------------------------------
+
+(use-package sly
+  :commands (sly sly-connect)
+  :config (setq inferior-lisp-program (expand-file-name "C:/home/scoop/apps/sbcl/current/sbcl.exe")))
+
+;; -------------------------------------
+
+;; from: https://www.john2x.com/emacs.html
+
+(defconst elispy-modes
+  '(emacs-lisp-mode ielm-mode)
+  "Emacs major modes.")
+
+(defconst lispy-modes
+  (append elispy-modes
+          '(lisp-mode inferior-lisp-mode lisp-interaction-mode clojure-mode cider-mode-hook cider-repl-mode-hook))
+  "All lispy major modes.")
+
+(defun maybe-check-parens ()
+  "Run `check-parens' if this is a lispy mode."
+  (when (memq major-mode lispy-modes)
+    (check-parens)))
+
+(add-hook 'after-save-hook 'maybe-check-parens)
