@@ -231,6 +231,17 @@
 
 ;; -----------------------------------------------------------------------------
 
+(use-package expand-region ; from: https://susamn.medium.com/ultimate-emacs-setup-with-documentation-in-org-mode-8ed32e2b3487
+  :ensure t
+  :bind ("M-m" . er/expand-region))
+
+(use-package minions ; from: https://susamn.medium.com/ultimate-emacs-setup-with-documentation-in-org-mode-8ed32e2b3487
+  :config
+  (setq minions-mode-line-lighter ""
+        minions-mode-line-delimiters '("" . ""))
+  (global-set-key [S-down-mouse-3] 'minions-minor-modes-menu)
+  (minions-mode +1))
+
 (use-package ahk-mode
   :config
   (setq ahk-indentation 2))
@@ -253,6 +264,28 @@
   :config
   (global-anzu-mode t)
   (set-face-foreground 'anzu-mode-line "#FF6F00"))
+
+(use-package corfu
+  :bind
+  (:map corfu-map
+        ("TAB" . corfu-complete)
+        ("<tab>" . corfu-complete))
+  :custom
+  (corfu-auto t) ;; Enable auto completion
+  (corfu-preview-current 'insert)
+  (corfu-preselect-first t)
+  (corfu-count 14)
+  (corfu-scroll-margin 0)
+  (corfu-min-width 30)
+  :init
+  (global-corfu-mode)
+  (corfu-popupinfo-mode))
+
+;; A few more useful configurations...
+(use-package emacs
+  :init
+  (setq completion-cycle-threshold 3) ; TAB cycle if there are only few candidates
+  (setq tab-always-indent 'complete))
 
 ;; -- magit --------------------------------------------------------------------
 
@@ -278,6 +311,9 @@
   (advice-add 'magit-status :around #'magit-status-around) ; check: https://www.gnu.org/software/emacs/manual/html_node/elisp/Porting-old-advice.html
   (setq magit-display-buffer-function 'magit-display-buffer-fullframe-status-v1))
 
+;; from: https://github.com/munen/emacs.d/
+(use-package magit-delta
+  :hook (magit-mode . magit-delta-mode))
 
 ;; -- lisp ---------------------------------------------------------------------
 
