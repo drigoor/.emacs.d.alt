@@ -1,11 +1,3 @@
-;;
-;; references:
-;;
-;;    https://github.com/ianyepan/yay-evil-emacs/blob/master/config.org
-;;       https://ianyepan.github.io/posts/setting-up-use-package/
-;;
-;;    https://gitlab.com/hineios/dotfiles
-
 ;; Package configs
 (require 'package)
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/"))
@@ -290,7 +282,6 @@
 ;; -- lisp ---------------------------------------------------------------------
 
 (use-package sly
-  :commands (sly sly-connect)
   :config (setq inferior-lisp-program (expand-file-name "C:/home/scoop/apps/sbcl/current/sbcl.exe")))
 
 ;; -------------------------------------
