@@ -305,6 +305,61 @@
 
   (setq extra-gitgrep-file-extensions "*.lisp *.cl"))
 
+(use-package hideshow
+  :preface
+  ;; from: https://wiki/siscog/MetodosDeTrabalhoNaoOficiais#A.5BLBO.4020100209.5D_Hide.2BAC8-Show_Comments_.28and_Code.29
+  (defun hs-hide-all-comments ()
+    "Adapted from `hs-hide-all'."
+    (interactive)
+    (hs-life-goes-on
+     (save-excursion
+       (unless hs-allow-nesting
+         (hs-discard-overlays (point-min) (point-max)))
+       (goto-char (point-min))
+       (let ((spew (make-progress-reporter "Hiding all comments..."
+                                           (point-min) (point-max)))
+             (re (concat "\\(" hs-block-start-regexp "\\)"
+                         "\\|\\(" hs-c-start-regexp "\\)")))
+         (while (progn
+                  (unless hs-hide-comments-when-hiding-all
+                    (forward-comment (point-max)))
+                  (re-search-forward re (point-max) t))
+           (if (match-beginning 1)
+               ;; we have found a block beginning, skip it
+               (progn
+                 (goto-char (match-beginning 1))
+                 (forward-sexp 1))
+             ;; found a comment, probably
+             (let ((c-reg (hs-inside-comment-p)))
+               (when (and c-reg (car c-reg))
+                 (if (> (count-lines (car c-reg) (nth 1 c-reg)) 1)
+                     (hs-hide-block-at-point t c-reg)
+                   (goto-char (nth 1 c-reg))))))
+           (progress-reporter-update spew (point)))
+         (progress-reporter-done spew)))
+     (beginning-of-line)
+     (run-hooks 'hs-hide-hook)))
+
+  (defvar hs-hide-all-comments-p nil)
+
+  (make-variable-buffer-local 'hs-all-comments-hidden-p)
+
+  (defun hs-toggle-all-comments ()
+    (interactive)
+    (setq hs-all-comments-hidden-p (not hs-all-comments-hidden-p))
+    (if hs-all-comments-hidden-p
+        (hs-hide-all-comments)
+      (hs-show-all)))
+
+  (defun hide-show-fn () ; from: http://emacs-fu.blogspot.pt/2008/12/showing-and-hiding-blocks-of-code.html
+    (local-set-key (kbd "C-c <right>") 'hs-show-block)
+    (local-set-key (kbd "C-c <left>")  'hs-hide-block)
+    (local-set-key (kbd "C-c <up>")    'hs-hide-all)
+    (local-set-key (kbd "C-c <down>")  'hs-show-all)
+    (hs-minor-mode +1))
+  :hook (prog-mode . hide-show-fn)
+  :config (setq hs-isearch-open 'code))
+
 ;; -----------------------------------------------------------------------------
 
 (use-package expand-region ; from: https://susamn.medium.com/ultimate-emacs-setup-with-documentation-in-org-mode-8ed32e2b3487
@@ -552,7 +607,10 @@
 (global-set-key [remap just-one-space] 'my-just-one-space)
 
 (global-set-key [f5] 'revert-buffer-no-confirm)
-
+(global-set-key [f6] (lambda ()
+                       (interactive)
+                       (revert-buffer-no-confirm)
+                       (hs-hide-all-comments)))
 (global-set-key [f8] 'toggle-window-dedicated)
 (global-set-key [f9] 'whitespace-mode)
 (global-set-key [f10] 'toggle-truncate-lines)
