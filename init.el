@@ -27,6 +27,22 @@
   (defun flash-mode-line ()
     (invert-face 'mode-line)
     (run-with-timer 0.1 nil #'invert-face 'mode-line))
+  (defun my-window-setup ()
+    (setq default-frame-alist '((undecorated . t)))
+    (add-to-list 'default-frame-alist '(left . 830))
+    (add-to-list 'default-frame-alist '(top . 50))
+    (add-to-list 'default-frame-alist '(width . (text-pixels . 1680)))
+    (add-to-list 'default-frame-alist '(height . (text-pixels . 1324)))
+    (add-to-list 'default-frame-alist '(drag-internal-border . +1))
+    (add-to-list 'default-frame-alist '(internal-border-width . 10))
+    (set-face-background 'internal-border "#faf8f4")
+    (setq window-divider-default-right-width 10
+          window-divider-default-places 'right-only)
+    (window-divider-mode +1)
+    (set-face-foreground 'window-divider "#faf8f4")
+    (set-face-foreground 'window-divider-first-pixel "#f5f2ef")
+    (set-face-foreground 'window-divider-last-pixel "#f5f2ef"))
+  :hook (emacs-startup . my-window-setup)
   :config
   (setq frame-title-format '("emacs")
         ring-bell-function 'flash-mode-line
@@ -59,12 +75,29 @@
         initial-scratch-message nil)
 
   (setq echo-keystrokes 0.1
-        mode-line-percent-position "")
+        mode-line-percent-position ""))
 
-  (add-to-list 'default-frame-alist '(left . 800))
-  (add-to-list 'default-frame-alist '(top . 180))
-  (add-to-list 'default-frame-alist '(width . (text-pixels . 1024)))
-  (add-to-list 'default-frame-alist '(height . (text-pixels . 1024))))
+;; The Emacs default split doesn't seem too intuitive for most users.
+(use-package emacs
+  :ensure nil
+  :preface
+  (defun ian/split-and-follow-horizontally ()
+    "Split window below."
+    (interactive)
+    (split-window-below)
+    (other-window 1))
+  (defun ian/split-and-follow-vertically ()
+    "Split window right."
+    (interactive)
+    (split-window-right)
+    (other-window 1))
+  :config
+  (global-set-key (kbd "C-x 2") #'ian/split-and-follow-horizontally)
+  (global-set-key (kbd "C-x 3") #'ian/split-and-follow-vertically))
+
+(use-package fringe
+  :ensure nil
+  :config (set-fringe-mode 10))
 
 (use-package frame
   :preface
@@ -78,7 +111,15 @@
   (ian/set-default-font)
 
   (blink-cursor-mode -1)
-  (set-background-color "#fefefc")
+  (set-background-color "#fefefc"))
+
+(use-package faces
+  :ensure nil
+  :config
+  (set-face-background 'cursor "orange")
+  (set-face-background 'region "#ffffcc")
+
+  (set-face-background 'fringe (face-background 'default))
 
   (set-face-attribute 'mode-line nil
                       :height 1.0
@@ -133,24 +174,26 @@
 
 (use-package windmove
   :ensure nil
-  :config
-  (windmove-default-keybindings 'M)) ; use Meta + arrow keys to switch between visible buffers
+  :config (windmove-default-keybindings 'M)) ; use Meta + arrow keys to switch between visible buffers
 
 (use-package mwheel
   :ensure nil
-  :config (setq mouse-wheel-scroll-amount '(7 ((shift) . 1) ((meta) . hscroll) ((control) . text-scale))
-                mouse-wheel-progressive-speed nil))
+  :config
+  (setq mouse-wheel-scroll-amount '(7 ((shift) . 1) ((meta) . hscroll) ((control) . text-scale))
+        mouse-wheel-progressive-speed nil))
 
 (use-package paren
   :ensure nil
   :init (setq show-paren-delay 0)
-  :config (show-paren-mode +1))
+  :config
+  (setq show-paren-style 'expression)
+  (show-paren-mode +1))
 
 (use-package ediff
   :ensure nil
   :config
-  (setq ediff-window-setup-function #'ediff-setup-windows-plain)
-  (setq ediff-split-window-function #'split-window-horizontally))
+  (setq ediff-window-setup-function #'ediff-setup-windows-plain
+        ediff-split-window-function #'split-window-horizontally))
 
 ;; Auto-insert matching parenthesis
 (use-package elec-pair
@@ -186,6 +229,14 @@
   :config
   (ido-mode +1))
 
+(use-package uniquify
+  :ensure nil
+  :config
+  (setq uniquify-buffer-name-style 'forward
+        uniquify-separator "/"
+        uniquify-after-kill-buffer-p t ; rename after killing uniquified
+        uniquify-ignore-buffers-re "^\\*")) ; don't muck with special buffers
+
 ;; -----------------------------------------------------------------------------
 
 (use-package ahk-mode
@@ -213,25 +264,26 @@
 
 ;; -- magit --------------------------------------------------------------------
 
-(defun magit-status-around (orig-fun &rest args)
-  (window-configuration-to-register 'x)
-  (delete-other-windows)
-  (apply orig-fun args))
-
 ;; references:
 ;; https://github.com/bradwright/emacs-d/blob/master/packages/init-magit.el
 ;; http://whattheemacsd.com/setup-magit.el-01.html
 (use-package magit
-  :bind (("C-x g" . magit-status)
-         ("C-c b" . magit-blame)
-         :map magit-status-mode-map
-         ("q" . magit-quit-session))
-  :config
-  (advice-add 'magit-status :around #'magit-status-around) ; check: https://www.gnu.org/software/emacs/manual/html_node/elisp/Porting-old-advice.html
+  :preface
+  (defun magit-status-around (orig-fun &rest args)
+    (window-configuration-to-register 'x)
+    (delete-other-windows)
+    (apply orig-fun args))
   (defun magit-quit-session ()
     (interactive)
     (kill-buffer)
     (jump-to-register 'x))
+  :bind
+  (("C-x g" . magit-status)
+   ("C-c b" . magit-blame)
+   :map magit-status-mode-map
+   ("q" . magit-quit-session))
+  :config
+  (advice-add 'magit-status :around #'magit-status-around) ; check: https://www.gnu.org/software/emacs/manual/html_node/elisp/Porting-old-advice.html
   (setq magit-display-buffer-function 'magit-display-buffer-fullframe-status-v1))
 
 
