@@ -186,20 +186,6 @@
   :config
   (ido-mode +1))
 
-;; -- global keys --------------------------------------------------------------
-
-(global-unset-key (kbd "C-z"))
-(global-unset-key (kbd "C-x C-z"))
-
-(global-set-key (kbd "C-x k") 'kill-this-buffer)
-
-(global-set-key (kbd "<C-tab>") 'other-window)
-(global-set-key (kbd "C-S-<tab>") (lambda () (interactive) (other-window -1)))
-
-;; scroll
-(global-set-key "\M-i" "\C-u1\M-v")
-(global-set-key "\M-k" "\C-u1\C-v")
-
 ;; -----------------------------------------------------------------------------
 
 (use-package ahk-mode
@@ -274,3 +260,150 @@
     (check-parens)))
 
 (add-hook 'after-save-hook 'maybe-check-parens)
+
+;; -- custom code --------------------------------------------------------------
+
+(defun open-file (path)
+  `(lambda ()
+     (interactive)
+     (find-file ,path)))
+
+(defun my-just-one-space()
+  (interactive "*")
+  (just-one-space -1))
+
+;; from: https://gitorious.org/gnu-emacs-config/mainline/blobs/a3fe6e69d9a752ef094448bfdf1794ce39916f4d/dotemacs.el
+(defun comment-or-uncomment-region-or-line ()
+  "Like comment-or-uncomment-region, but if there's no mark \(that means no 194 region\) apply comment-or-uncomment to the current line"
+  (interactive)
+  (if (not mark-active)
+      (comment-or-uncomment-region
+       (line-beginning-position) (line-end-position))
+    (if (< (point) (mark))
+        (comment-or-uncomment-region (point) (mark))
+      (comment-or-uncomment-region (mark) (point)))))
+
+;; from: http://sachachua.com/blog/2008/07/emacs-keyboard-shortcuts-for-navigating-code/
+(defun sacha/isearch-yank-current-word ()
+  "Pull current word from buffer into search string."
+  (interactive)
+  (save-excursion
+    (skip-syntax-backward "w_")
+    (isearch-yank-internal
+     (lambda ()
+       (skip-syntax-forward "w_")
+       (point)))))
+
+;; modified to display message
+(defun sacha/search-word-forward ()
+  "Find the next occurrance of the current word."
+  (interactive)
+  (let ((cur (point)))
+    (skip-syntax-forward "w_")
+    (let ((text (with-current-buffer (current-buffer)
+                  (buffer-substring-no-properties cur (point)))))
+      (goto-char
+       (cond ((re-search-forward (concat "\\_<" (regexp-quote (current-word)) "\\_>") nil t)
+              (message "found forward: %s" text)
+              (match-beginning 0))
+             (t
+              (message "'%s' not found forward in buffer" text)
+              cur))))))
+
+;; modified to display message
+(defun sacha/search-word-backward ()
+  "Find the previous occurrence of the current word."
+  (interactive)
+  (let ((cur (point)))
+    (skip-syntax-backward "w_")
+    (let* ((found? (re-search-backward (concat "\\_<" (regexp-quote (current-word)) "\\_>") nil t))
+           (pt2 (save-excursion
+                  (re-search-forward (concat "\\_<" (regexp-quote (current-word)) "\\_>") nil t)
+                  (point)))
+           (text (with-current-buffer (current-buffer)
+                   (buffer-substring-no-properties (point) pt2))))
+      (cond (found?
+             (message "found backward: %s" text)
+             (match-beginning 0))
+            (t
+             (message "'%s' not found backward in buffer" text)
+             cur)))))
+
+;; from: http://stackoverflow.com/questions/2416655/file-path-to-clipboard-in-emacs
+;; original: https://github.com/bbatsov/prelude
+(defun prelude-copy-file-name-to-clipboard ()
+  "Display and copy to the clipboard the current buffer file name."
+  (interactive)
+  (let ((filename (if (equal major-mode 'dired-mode)
+                      default-directory
+                    (buffer-file-name))))
+    (when filename
+      (kill-new filename)
+      (message "%s" filename))))
+
+;; from LBO > scg-open-explorer
+(defun open-buffer-path ()
+  (interactive)
+  (cl-flet ((w32ify-path (path)
+                         (convert-standard-filename (replace-regexp-in-string "/" "\\" path t t))))
+    (cond (buffer-file-name
+           (w32-shell-execute "open" "explorer" (concat "/e,/select," (w32ify-path buffer-file-name))))
+          (default-directory
+            (w32-shell-execute "explore" (w32ify-path default-directory)))
+          (t
+           (user-error "Current buffer not associated with any path")))))
+
+;; from: http://www.emacswiki.org/emacs/RevertBuffer
+(defun revert-buffer-no-confirm (&optional force-reverting)
+  "Interactive call to revert-buffer. Ignoring the auto-save
+ file and not requesting for confirmation. When the current buffer
+ is modified, the command refuses to revert it, unless you specify
+ the optional argument: force-reverting to true."
+  (interactive "P")
+  ;;(message "force-reverting value is %s" force-reverting)
+  (if (or force-reverting (not (buffer-modified-p)))
+      (revert-buffer :ignore-auto :noconfirm)
+    (error "The buffer has been modified")))
+
+
+;; from: https://stackoverflow.com/questions/43765/pin-emacs-buffers-to-windows-for-cscope
+(defun toggle-window-dedicated ()
+  "Toggle whether the current active window is dedicated or not."
+  (interactive)
+  (message (if (let (window (get-buffer-window (current-buffer)))
+                 (set-window-dedicated-p window (not (window-dedicated-p window))))
+               "Window '%s' is dedicated"
+             "Window '%s' is normal")
+           (current-buffer)))
+
+;; -- global keys --------------------------------------------------------------
+
+(global-unset-key (kbd "C-z"))
+(global-unset-key (kbd "C-x C-z"))
+
+(global-set-key (kbd "C-x k") 'kill-this-buffer)
+
+(global-set-key (kbd "<C-tab>") 'other-window)
+(global-set-key (kbd "C-S-<tab>") (lambda () (interactive) (other-window -1)))
+
+(global-set-key "\M-i" "\C-u1\M-v") ; scroll up
+(global-set-key "\M-k" "\C-u1\C-v") ; scroll down
+
+(global-set-key (kbd "C-M-#") (open-file user-init-file))
+(global-set-key (kbd "C-M-$") (open-file "c:/home/.autohotkey/autohotkey.ahk"))
+(global-set-key (kbd "C-M-&") (open-file "c:/home/.bashrc"))
+
+(global-set-key (kbd "C-c c") 'comment-or-uncomment-region-or-line)
+(global-set-key [remap just-one-space] 'my-just-one-space)
+
+(global-set-key [f5] 'revert-buffer-no-confirm)
+
+(global-set-key [f8] 'toggle-window-dedicated)
+(global-set-key [f9] 'whitespace-mode)
+(global-set-key [f10] 'toggle-truncate-lines)
+(global-set-key [f11] 'prelude-copy-file-name-to-clipboard)
+(global-set-key [f12] 'open-buffer-path)
+
+(define-key isearch-mode-map (kbd "C-d") 'sacha/isearch-yank-current-word) ; Type C-s (isearch-forward) to start interactively searching forward, and type C-x to get the current word.
+(global-set-key '[C-M-up] 'sacha/search-word-backward)
+(global-set-key '[C-M-down] 'sacha/search-word-forward)
