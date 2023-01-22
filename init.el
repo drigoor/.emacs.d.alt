@@ -183,7 +183,35 @@
 
 (use-package ediff
   :ensure nil
+  :init (add-to-list 'exec-path "c:/home/scoop/apps/git/current/usr/bin")
   :config
+  ;; from: https://emacs.stackexchange.com/questions/7482/restoring-windows-and-layout-after-an-ediff-session/7486
+
+  (defvar ediff-last-windows nil
+    "Last ediff window configuration.")
+
+  (defun ediff-restore-windows ()
+    "Restore window configuration to `ediff-last-windows'."
+    (set-window-configuration ediff-last-windows)
+    (remove-hook 'ediff-after-quit-hook-internal 'ediff-restore-windows))
+
+  (defun ediff-save-windows ()
+    "Save window configuration to `ediff-last-windows'."
+    (setq ediff-last-windows (current-window-configuration))
+    (add-hook 'ediff-after-quit-hook-internal 'ediff-restore-windows))
+
+  (defadvice ediff-files (around ediff-restore-windows activate)
+    (ediff-save-windows)
+    ad-do-it)
+
+  (defadvice ediff-buffers (around ediff-restore-windows activate)
+    (ediff-save-windows)
+    ad-do-it)
+
+  (defadvice ediff-regions-linewise (around ediff-restore-windows activate)
+    (ediff-save-windows)
+    ad-do-it)
+
   (setq ediff-window-setup-function #'ediff-setup-windows-plain
         ediff-split-window-function #'split-window-horizontally))
 
