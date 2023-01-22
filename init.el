@@ -6,63 +6,104 @@
 ;;
 ;;    https://gitlab.com/hineios/dotfiles
 
-
-
+;; Package configs
 (require 'package)
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/"))
 (package-initialize)
 
-
+;; Bootstrap `use-package`
 (unless (package-installed-p 'use-package)
   (package-refresh-contents)
   (package-install 'use-package))
 (eval-and-compile
-  (setq use-package-always-ensure t
-        use-package-expand-minimally t))
-
+  (setq use-package-always-ensure t))
 
 (use-package emacs
   :ensure nil
   :preface
   (defvar ian/indent-width 4) ; change this value to your preferred width
+  ;; from: https://github.com/magnars/.emacs.d/blob/master/settings/appearance.el
+  ;; from: https://www.emacswiki.org/emacs/AlarmBell
+  (defun flash-mode-line ()
+    (invert-face 'mode-line)
+    (run-with-timer 0.1 nil #'invert-face 'mode-line))
   :config
   (setq frame-title-format '("emacs")
-        ring-bell-function 'ignore
+        ring-bell-function 'flash-mode-line
+        visible-bell nil
         frame-resize-pixelwise t
         default-directory "~/")
 
-  (tool-bar-mode -1)
   (menu-bar-mode -1)
+  (tool-bar-mode -1)
+
+  (fset 'yes-or-no-p 'y-or-n-p)
 
   ;; better scrolling experience
   (setq scroll-margin 0
-        scroll-conservatively 101 ; > 100
+        scroll-conservatively 101       ; > 100
         scroll-preserve-screen-position t
         auto-window-vscroll nil)
 
   ;; Always use spaces for indentation
   (setq-default indent-tabs-mode nil
-                tab-width ian/indent-width)
-  (setq inhibit-startup-screen t))
+                tab-width ian/indent-width
+                show-trailing-whitespace t
+                truncate-lines t)
 
+  (setq-default line-spacing 0.15)
 
-;; The Emacs default split doesn't seem too intuitive for most users.
-(use-package emacs
-  :ensure nil
+  (setq inhibit-startup-screen t
+        inhibit-startup-message t
+        inhibit-startup-echo-area-message t
+        initial-scratch-message nil)
+
+  (setq echo-keystrokes 0.1
+        mode-line-percent-position "")
+
+  (add-to-list 'default-frame-alist '(left . 800))
+  (add-to-list 'default-frame-alist '(top . 180))
+  (add-to-list 'default-frame-alist '(width . (text-pixels . 1024)))
+  (add-to-list 'default-frame-alist '(height . (text-pixels . 1024))))
+
+(use-package frame
   :preface
-  (defun ian/split-and-follow-horizontally ()
-    "Split window below."
+  (defun ian/set-default-font ()
     (interactive)
-    (split-window-below)
-    (other-window 1))
-  (defun ian/split-and-follow-vertically ()
-    "Split window right."
-    (interactive)
-    (split-window-right)
-    (other-window 1))
+    (when (member "Consolas" (font-family-list))
+      (set-face-attribute 'default nil :family "Consolas"))
+    (set-face-attribute 'default nil :height 100 :weight 'normal))
+  :ensure nil
   :config
-  (global-set-key (kbd "C-x 2") #'ian/split-and-follow-horizontally)
-  (global-set-key (kbd "C-x 3") #'ian/split-and-follow-vertically))
+  (ian/set-default-font)
+
+  (blink-cursor-mode -1)
+  (set-background-color "#fefefc")
+
+  (set-face-attribute 'mode-line nil
+                      :height 1.0
+                      :foreground (face-foreground 'default)
+                      :foreground "#605e57"
+                      :background "#f2ecdb"
+                      :overline nil
+                      :underline nil
+                      :box `(:line-width 3 :color ,"#f0e0d0" :style nil))
+  (set-face-attribute 'mode-line-inactive nil
+                      :height 1.0
+                      :foreground "#aba9a7"
+                      :background "#faf8f4"
+                      :overline nil
+                      :underline nil
+                      :inherit nil
+                      :box `(:line-width 3 :color ,"#f5f2ef" :style nil)))
+
+(use-package hl-line
+  :ensure nil
+  :config (global-hl-line-mode +1))
+
+(use-package tooltip
+  :ensure nil
+  :config (tooltip-mode -1))
 
 (use-package delsel
   :ensure nil
@@ -79,43 +120,31 @@
 (use-package files
   :ensure nil
   :config
-  (setq ;; confirm-kill-processes nil
-        ;; create-lockfiles nil ; don't create .# files (crashes 'npm start')
-        make-backup-files nil))
+  (setq make-backup-files nil)
+  (setq-default require-final-newline t))
 
 (use-package autorevert
   :ensure nil
   :config
-  (global-auto-revert-mode +1)
+  (global-auto-revert-mode +1) ; revert buffers automatically when underlying files are changed externally
   (setq auto-revert-interval 2
         auto-revert-check-vc-info t
-        global-auto-revert-non-file-buffers t
-        ;; auto-revert-verbose nil
-        ))
+        global-auto-revert-non-file-buffers t))
+
+(use-package windmove
+  :ensure nil
+  :config
+  (windmove-default-keybindings 'M)) ; use Meta + arrow keys to switch between visible buffers
 
 (use-package mwheel
   :ensure nil
-  :config (setq ;; mouse-wheel-scroll-amount '(2 ((shift) . 1))
+  :config (setq mouse-wheel-scroll-amount '(7 ((shift) . 1) ((meta) . hscroll) ((control) . text-scale))
                 mouse-wheel-progressive-speed nil))
 
 (use-package paren
   :ensure nil
   :init (setq show-paren-delay 0)
   :config (show-paren-mode +1))
-
-(use-package frame
-  :preface
-  (defun ian/set-default-font ()
-    (interactive)
-    (when (member "Consolas" (font-family-list))
-      (set-face-attribute 'default nil :family "Consolas"))
-    (set-face-attribute 'default nil
-                        :height 100
-                        :weight 'normal))
-  :ensure nil
-  :config
-  (setq initial-frame-alist '((fullscreen . maximized)))
-  (ian/set-default-font))
 
 (use-package ediff
   :ensure nil
@@ -127,10 +156,6 @@
 (use-package elec-pair
   :ensure nil
   :config (electric-pair-mode t))
-
-;; (use-package elec-pair
-;;   :ensure nil
-;;   :hook (prog-mode . electric-pair-mode))
 
 (use-package whitespace
   :ensure nil
@@ -151,7 +176,6 @@
   :ensure nil
   :config (setq custom-file (concat user-emacs-directory "custom.el")))
 
-
 ;; Super charge Emacs' completion engine
 (use-package ido
   :ensure nil
@@ -162,107 +186,16 @@
   :config
   (ido-mode +1))
 
+;; -- global keys --------------------------------------------------------------
 
+(global-unset-key (kbd "C-z"))
+(global-unset-key (kbd "C-x C-z"))
 
+(global-set-key (kbd "C-x k") 'kill-this-buffer)
 
+(global-set-key (kbd "<C-tab>") 'other-window)
+(global-set-key (kbd "C-S-<tab>") (lambda () (interactive) (other-window -1)))
 
-
-
-
-
-
-
-
-
-
-;; TODO -- use smartparens ???
-
-
-
-;; ------------------------------
-
-;; external packages ---------------------------------------------------
-
-;; (use-package company
-;;   :diminish company-mode
-;;   :hook (prog-mode . company-mode)
-;;   :config
-;;   (setq company-minimum-prefix-length 1
-;;         company-idle-delay 0.1
-;;         company-selection-wrap-around t
-;;         company-tooltip-align-annotations t
-;;         company-frontends '(company-pseudo-tooltip-frontend ; show tooltip even for single candidate
-;;                             company-echo-metadata-frontend))
-;;   (define-key company-active-map (kbd "C-n") 'company-select-next)
-;;   (define-key company-active-map (kbd "C-p") 'company-select-previous))
-
-;; (use-package flycheck :config (global-flycheck-mode +1))
-
-;; (use-package org
-;;   :hook ((org-mode . visual-line-mode)
-;;          (org-mode . org-indent-mode)))
-
-;; (use-package org-bullets :hook (org-mode . org-bullets-mode))
-
-;; (use-package markdown-mode
-;;   :hook (markdown-mode . auto-fill-mode)
-;;   :custom-face (markdown-code-face ((t (:inherit org-block)))))
-
-;; (use-package web-mode
-;;   :mode (("\\.html?\\'" . web-mode)
-;;          ("\\.css\\'"   . web-mode)
-;;          ("\\.jsx?\\'"  . web-mode)
-;;          ("\\.tsx?\\'"  . web-mode)
-;;          ("\\.json\\'"  . web-mode))
-;;   :config
-;;   (setq web-mode-markup-indent-offset 2) ; HTML
-;;   (setq web-mode-css-indent-offset 2)    ; CSS
-;;   (setq web-mode-code-indent-offset 2)   ; JS/JSX/TS/TSX
-;;   (setq web-mode-content-types-alist '(("jsx" . "\\.js[x]?\\'"))))
-
-;; (use-package json-mode)
-
-;; (use-package yaml-mode)
-
-
-;; ;; Editable and saveable grep buffer
-;; (use-package wgrep)
-
-
-
-;; (use-package highlight-numbers
-;;   :hook (prog-mode . highlight-numbers-mode))
-
-;; (use-package highlight-escape-sequences
-;;   :hook (prog-mode . hes-mode))
-
-
-
-;; (use-package magit
-;;   :bind ("C-x g" . magit-status)
-;;   ;; :config (add-hook 'with-editor-mode-hook #'evil-insert-state)
-;;   )
-
-
-;; (use-package dashboard
-;;   :config
-;;   (dashboard-setup-startup-hook)
-;;   (setq dashboard-startup-banner 'logo
-;;         dashboard-banner-logo-title " . ~ e m a c s ~ ."
-;;         dashboard-items nil
-;;         dashboard-set-footer nil))
-
-
-;; (use-package diminish
-;;   :demand t)
-
-;; (use-package which-key
-;;   :diminish which-key-mode
-;;   :config
-;;   (which-key-mode +1)
-;;   (setq which-key-idle-delay 0.4
-;;         which-key-idle-secondary-delay 0.4))
-
-;; (use-package exec-path-from-shell
-;;   :config (when (memq window-system '(mac ns x))
-;;             (exec-path-from-shell-initialize)))
+;; scroll
+(global-set-key "\M-i" "\C-u1\M-v")
+(global-set-key "\M-k" "\C-u1\C-v")
