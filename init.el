@@ -181,9 +181,53 @@
   (setq show-paren-style 'expression)
   (show-paren-mode +1))
 
+;; Auto-insert matching parenthesis
+(use-package elec-pair
+  :ensure nil
+  :config (electric-pair-mode t))
+
+(use-package whitespace
+  :ensure nil
+  :hook (before-save . whitespace-cleanup))
+
+;; Delete intermediate buffers when navigating through dired
+(use-package dired
+  :ensure nil
+  :config
+  (setq delete-by-moving-to-trash t)
+  (eval-after-load "dired"
+    #'(lambda ()
+        (put 'dired-find-alternate-file 'disabled nil)
+        (define-key dired-mode-map (kbd "RET") #'dired-find-alternate-file))))
+
+;; Dump custom-set-variables to a garbage file and don't load it
+(use-package cus-edit
+  :ensure nil
+  :config (setq custom-file (concat user-emacs-directory "custom.el")))
+
+;; Super charge Emacs' completion engine
+(use-package ido
+  :ensure nil
+  :init
+  (setq ido-enable-flex-matching t
+        ido-everywhere t
+        ido-auto-merge-work-directories-length -1
+        ido-create-new-buffer 'always)
+  :config
+  (ido-mode +1))
+
+(use-package uniquify
+  :ensure nil
+  :config
+  (setq uniquify-buffer-name-style 'forward
+        uniquify-separator "/"
+        uniquify-after-kill-buffer-p t ; rename after killing uniquified
+        uniquify-ignore-buffers-re "^\\*")) ; don't muck with special buffers
+
 (use-package ediff
   :ensure nil
-  :init (add-to-list 'exec-path "c:/home/scoop/apps/git/current/usr/bin")
+  :init
+  (add-to-list 'exec-path "c:/home/scoop/apps/git/current/usr/bin")
   :config
   ;; from: https://emacs.stackexchange.com/questions/7482/restoring-windows-and-layout-after-an-ediff-session/7486
 
@@ -215,55 +259,13 @@
   (setq ediff-window-setup-function #'ediff-setup-windows-plain
         ediff-split-window-function #'split-window-horizontally))
 
-;; Auto-insert matching parenthesis
-(use-package elec-pair
-  :ensure nil
-  :config (electric-pair-mode t))
-
-(use-package whitespace
-  :ensure nil
-  :hook (before-save . whitespace-cleanup))
-
-;; Delete intermediate buffers when navigating through dired
-(use-package dired
-  :ensure nil
-  :config
-  (setq delete-by-moving-to-trash t)
-  (eval-after-load "dired"
-    #'(lambda ()
-        (put 'dired-find-alternate-file 'disabled nil)
-        (define-key dired-mode-map (kbd "RET") #'dired-find-alternate-file))))
-
-;; Dump custom-set-variables to a garbage file and don't load it
-(use-package cus-edit
-  :ensure nil
-  :config (setq custom-file (concat user-emacs-directory "custom.el")))
-
-;; Super charge Emacs' completion engine
-(use-package ido
-  :ensure nil
-  :init (setq ido-enable-flex-matching t
-              ido-everywhere t
-              ido-auto-merge-work-directories-length -1
-              ido-create-new-buffer 'always)
-  :config
-  (ido-mode +1))
-
-(use-package uniquify
-  :ensure nil
-  :config
-  (setq uniquify-buffer-name-style 'forward
-        uniquify-separator "/"
-        uniquify-after-kill-buffer-p t ; rename after killing uniquified
-        uniquify-ignore-buffers-re "^\\*")) ; don't muck with special buffers
-
 (use-package grep
   :ensure nil
   :bind
   (("C-S-s" . extra-gitgrep)
    ("C-M-S-s" . extra-gitgrep-with-comments))
   :config
-    (defvar extra-gitgrep-default-git-repo nil
+  (defvar extra-gitgrep-default-git-repo nil
     "If a git repository is not found, this specifies where to search by default.")
 
   (defvar extra-gitgrep-file-extensions "*.lisp *.cl"
