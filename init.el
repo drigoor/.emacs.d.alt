@@ -401,18 +401,19 @@
 (use-package corfu
   :bind
   (:map corfu-map
+        ("<escape>" . corfu-quit)
         ("TAB" . corfu-complete)
-        ("<tab>" . corfu-complete))
+        ("SPC" . corfu-complete))
   :custom
-  (corfu-auto t) ;; Enable auto completion
-  (corfu-preview-current 'insert)
+  (corfu-cycle nil)               ; disable cycling for `corfu-next/previous'
+  (corfu-auto t)                  ; enable auto completion
+  (corfu-auto-prefix 3)           ; auto complete after a number of typed characters
+  (corfu-auto-delay 0.25)         ; auto complete after a delay
+  (corfu-preview-current 'insert) ; insert current candidate preview
   (corfu-preselect-first t)
-  (corfu-count 14)
   (corfu-scroll-margin 0)
-  (corfu-min-width 30)
   :init
-  (global-corfu-mode)
-  (corfu-popupinfo-mode))
+  (global-corfu-mode +1))
 
 ;; A few more useful configurations...
 (use-package emacs
