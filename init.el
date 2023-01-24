@@ -89,6 +89,7 @@
 
 (use-package fringe
   :ensure nil
+  :custom-face (fringe ((t (:background "default"))))
   :config (set-fringe-mode 10))
 
 (use-package frame
@@ -111,8 +112,6 @@
   (set-face-background 'cursor "orange")
   (set-face-background 'region "#ffffcc")
 
-  (set-face-background 'fringe (face-background 'default))
-
   (set-face-attribute 'mode-line nil
                       :height 1.0
                       :foreground (face-foreground 'default)
@@ -132,6 +131,7 @@
 
 (use-package hl-line
   :ensure nil
+  :custom-face (hl-line ((t (:background "#f0ffe0"))))
   :config (global-hl-line-mode +1))
 
 (use-package tooltip
