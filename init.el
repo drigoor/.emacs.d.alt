@@ -93,6 +93,7 @@
   :config (set-fringe-mode 10))
 
 (use-package frame
+  :ensure nil
   :preface
   (defun ian/set-default-font ()
     (interactive)
@@ -308,6 +309,7 @@
   (setq extra-gitgrep-file-extensions "*.lisp *.cl"))
 
 (use-package hideshow
+  :ensure nil
   :preface
   ;; from: https://wiki/siscog/MetodosDeTrabalhoNaoOficiais#A.5BLBO.4020100209.5D_Hide.2BAC8-Show_Comments_.28and_Code.29
   (defun hs-hide-all-comments ()
@@ -417,6 +419,7 @@
 
 ;; A few more useful configurations...
 (use-package emacs
+  :ensure nil
   :init
   (setq completion-cycle-threshold 3) ; TAB cycle if there are only few candidates
   (setq tab-always-indent 'complete))
