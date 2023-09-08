@@ -61,10 +61,10 @@
 
   (setq-default line-spacing 0.15)
 
-  (setq inhibit-startup-screen t
-        inhibit-startup-message t
-        inhibit-startup-echo-area-message t
-        initial-scratch-message nil)
+  (setq inhibit-startup-screen t)
+  (setq inhibit-startup-message t)
+  (setq initial-scratch-message nil)
+  (setq inhibit-startup-echo-area-message "user")
 
   (setq echo-keystrokes 0.1
         mode-line-percent-position ""))
@@ -89,7 +89,7 @@
 
 (use-package fringe
   :ensure nil
-  :custom-face (fringe ((t (:background "default"))))
+  :custom-face (fringe ((t (:background "#fefefc"))))
   :config (set-fringe-mode 10))
 
 (use-package frame
@@ -100,7 +100,6 @@
     (when (member "Consolas" (font-family-list))
       (set-face-attribute 'default nil :family "Consolas"))
     (set-face-attribute 'default nil :height 100 :weight 'normal))
-  :ensure nil
   :config
   (ian/set-default-font)
 
@@ -112,7 +111,6 @@
   :config
   (set-face-background 'cursor "orange")
   (set-face-background 'region "#ffffcc")
-
   (set-face-attribute 'mode-line nil
                       :height 1.0
                       :foreground (face-foreground 'default)
@@ -403,26 +401,45 @@
 (use-package corfu
   :bind
   (:map corfu-map
-        ("<escape>" . corfu-quit)
-        ("TAB" . corfu-complete)
-        ("SPC" . corfu-complete))
+        ;; ("<escape>" . corfu-quit)
+        ;; ([escape] . corfu-quit)
+        ;; ("TAB" . corfu-complete)
+        ;; ([tab] . corfu-complete)
+        ("SPC" . (lambda ()
+                   (interactive)
+                   (corfu-insert)
+                   (just-one-space)))
+        ;; ("TAB" . corfu-next)
+        ;; ([tab] . corfu-next)
+        ;; ("S-TAB" . corfu-previous)
+        ;; ([backtab] . corfu-previous)
+        )
   :custom
-  (corfu-cycle nil)               ; disable cycling for `corfu-next/previous'
-  (corfu-auto t)                  ; enable auto completion
-  (corfu-auto-prefix 3)           ; auto complete after a number of typed characters
-  (corfu-auto-delay 0.25)         ; auto complete after a delay
-  (corfu-preview-current 'insert) ; insert current candidate preview
+  (corfu-cycle nil)  ; disable cycling for `corfu-next/previous'
+  (corfu-auto t)     ; enable auto completion (also complete with TAB)
+  (corfu-quit-at-boundary t) ; automatically quit at word boundary
+  (corfu-quit-no-match t)    ; automatically quit if there is no match
+  (corfu-preview-current 'insert)   ; insert current candidate preview
   (corfu-preselect-first t)
   (corfu-scroll-margin 0)
   :init
   (global-corfu-mode +1))
 
-;; A few more useful configurations...
+;; a few more useful configurations for corfu
 (use-package emacs
   :ensure nil
   :init
-  (setq completion-cycle-threshold 3) ; TAB cycle if there are only few candidates
+  ;; (setq completion-cycle-threshold 3) ; TAB cycle if there are only few candidates
   (setq tab-always-indent 'complete))
+
+(use-package auto-package-update
+  :custom
+  (auto-package-update-interval 7)
+  (auto-package-update-prompt-before-update t)
+  (auto-package-update-hide-results t)
+  :config
+  (auto-package-update-maybe)
+  (auto-package-update-at-time "09:00"))
 
 ;; -- magit --------------------------------------------------------------------
 
@@ -610,7 +627,7 @@
 (global-set-key (kbd "C-M-&") (open-file "c:/home/.bashrc"))
 
 (global-set-key (kbd "C-c c") 'comment-or-uncomment-region-or-line)
-(global-set-key [remap just-one-space] 'my-just-one-space)
+(global-set-key (kbd "M-SPC") 'my-just-one-space)
 
 (global-set-key [f5] 'revert-buffer-no-confirm)
 (global-set-key [f6] (lambda ()
