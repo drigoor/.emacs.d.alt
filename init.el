@@ -1,73 +1,97 @@
-;; Package configs
 (require 'package)
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/"))
 (package-initialize)
 
-;; Bootstrap `use-package`
-(unless (package-installed-p 'use-package)
-  (package-refresh-contents)
-  (package-install 'use-package))
-(eval-and-compile
-  (setq use-package-always-ensure t))
+
+(require 'use-package-ensure)
+(setq use-package-always-ensure t)
+
 
 (use-package emacs
-  :ensure nil
-  :preface
-  (defvar ian/indent-width 4) ; change this value to your preferred width
-  ;; from: https://github.com/magnars/.emacs.d/blob/master/settings/appearance.el
-  ;; from: https://www.emacswiki.org/emacs/AlarmBell
-  (defun flash-mode-line ()
-    (invert-face 'mode-line)
-    (run-with-timer 0.1 nil #'invert-face 'mode-line))
-  (defun my-window-setup ()
-    (setq default-frame-alist '((undecorated . t)))
-    (add-to-list 'default-frame-alist '(left . 830))
-    (add-to-list 'default-frame-alist '(top . 50))
-    (add-to-list 'default-frame-alist '(width . (text-pixels . 1680)))
-    (add-to-list 'default-frame-alist '(height . (text-pixels . 1324)))
-    (add-to-list 'default-frame-alist '(drag-internal-border . +1))
-    (add-to-list 'default-frame-alist '(internal-border-width . 10))
-    (set-face-background 'internal-border "#faf8f4")
-    (setq window-divider-default-right-width 10
-          window-divider-default-places 'right-only)
-    (window-divider-mode +1)
-    (set-face-foreground 'window-divider "#faf8f4")
-    (set-face-foreground 'window-divider-first-pixel "#f5f2ef")
-    (set-face-foreground 'window-divider-last-pixel "#f5f2ef"))
-  :hook (emacs-startup . my-window-setup)
-  :config
-  (setq frame-title-format '("emacs")
-        ring-bell-function 'flash-mode-line
-        visible-bell nil
-        frame-resize-pixelwise t
-        default-directory "~/")
+  :demand t
+  :custom
+  ;; memory configuration
+  (gc-cons-threshold 10000000 "Higher garbage collection threshold, prevents frequent gc locks.")
+  (byte-compile-warnings '(not obsolete) "Ignore warnings for (obsolete) elisp compilations.")
+  (warning-suppress-log-types '((comp) (bytecomp)) "And other log types completely.")
+  (large-file-warning-threshold 100000000 "Large files are okay in the new millenium.")
+  (read-process-output-max (max 65536 read-process-output-max) "Read upto 64K (or max) based on system pipe capacity")
+  ;; frame configuration
+  (frame-inhibit-implied-resize t "Improve emacs startup time by not resizing to adjust for custom settings.")
+  (frame-resize-pixelwise t "Dont resize based on character height / width but to exact pixels.")
+  ;; backups
+  (make-backup-files nil)
 
-  (menu-bar-mode -1)
-  (tool-bar-mode -1)
+  (inhibit-startup-screen t)
+  (inhibit-startup-message t)
+  (inhibit-startup-echo-area-message t)
+  (initial-scratch-message (concat
+                            ";; This buffer is for text that is not saved, and for Lisp evaluation.\n"
+                            ";; To create a file, visit it with C-x C-f and enter text in its buffer.\n"
+                            ";;\n"
+                            ";; __          __  _\n"
+                            ";; \\ \\        / / | |\n"
+                            ";;  \\ \\  /\\  / /__| | ___ ___  _ __ ___   ___\n"
+                            ";;   \\ \\/  \\/ / _ \\ |/ __/ _ \\| '_ ` _ \\ / _ \\\n"
+                            ";;    \\  /\\  /  __/ | (_| (_) | | | | | |  __/_\n"
+                            ";;     \\/  \\/ \\___|_|\\___\\___/|_| |_| |_|\\___(_)\n"))
 
-  (fset 'yes-or-no-p 'y-or-n-p)
+  ;; packages
+  (package-install-upgrade-built-in t)
 
-  ;; better scrolling experience
-  (setq scroll-margin 0
-        scroll-conservatively 101       ; > 100
-        scroll-preserve-screen-position t
-        auto-window-vscroll nil)
+
+  (default-directory "~/")
+
+  :init
+  (delete-selection-mode +1)
+  (tooltip-mode -1)
+
+  (menu-bar-mode -1)                    ;; no menu bar
+  (toggle-scroll-bar -1)                ;; no scroll bar
+  (tool-bar-mode -1)                    ;; no tool bar either
+  (global-hl-line-mode +1)              ;; always highlight current line
+  (blink-cursor-mode -1)                ;; stop blinking
+  (global-display-line-numbers-mode -1) ;; always show line numbers
+  (column-number-mode t)                ;; column number in the mode line
+  (pixel-scroll-precision-mode)         ;; smooth mouse scroll
+  (fset 'yes-or-no-p 'y-or-n-p)         ;; dont ask me to type yes/no everytime, y/n is good enough
+;;----------- TODO repeated  (electric-pair-mode)                  ;; auto-insert matching parenthesis
+
+  ;; UTF-8 EVERYWHERE
+  (prefer-coding-system       'utf-8)
+  (set-default-coding-systems 'utf-8)
+  (set-terminal-coding-system 'utf-8)
+  (set-keyboard-coding-system 'utf-8)
+  (set-language-environment   'utf-8)
+
+  (set-frame-font "Consolas 11" nil t) ;; font of the century
 
   ;; Always use spaces for indentation
   (setq-default indent-tabs-mode nil
-                tab-width ian/indent-width
+                tab-width 4
                 show-trailing-whitespace t
                 truncate-lines t)
 
-  (setq-default line-spacing 0.15)
+  ;; TODO DELETE ME -- just an example: https://www.gnu.org/software/emacs/manual/html_node/use-package/Getting-Started.html
+  ;;
+  ;; :bind (("M-s O" . moccur)
+  ;;        :map isearch-mode-map
+  ;;        ("M-o" . isearch-moccur)
+  ;;        ("M-O" . isearch-moccur-all))
 
-  (setq inhibit-startup-screen t)
-  (setq inhibit-startup-message t)
-  (setq initial-scratch-message nil)
-  (setq inhibit-startup-echo-area-message "user")
+  :bind
+  (("C-<wheel-up>"   . nil)                  ; dont zoom in please
+   ("C-<wheel-down>" . nil)                  ; dont zoom in either
+   ("C-x k"          . kill-this-buffer))    ; kill the buffer, dont ask
+  :mode
+  ("\\.rs\\'" . rust-ts-mode)
+  ("\\.go\\'" . go-ts-mode)
+  ("\\.ts\\'" . typescript-ts-mode)
+  ("\\.tsx\\'" . tsx-ts-mode)
+  ("\\.cs\\'" . csharp-ts-mode)
+  :hook
+  (before-save . whitespace-cleanup))
 
-  (setq echo-keystrokes 0.1
-        mode-line-percent-position ""))
 
 ;; The Emacs default split doesn't seem too intuitive for most users.
 (use-package emacs
@@ -84,27 +108,22 @@
     (split-window-right)
     (other-window 1))
   :config
-  (global-set-key (kbd "C-x 2") #'ian/split-and-follow-horizontally)
-  (global-set-key (kbd "C-x 3") #'ian/split-and-follow-vertically))
+  (global-set-key (kbd "C-x 2") 'ian/split-and-follow-horizontally)
+  (global-set-key (kbd "C-x 3") 'ian/split-and-follow-vertically))
 
-(use-package fringe
-  :ensure nil
-  :custom-face (fringe ((t (:background "#fefefc"))))
-  :config (set-fringe-mode 10))
 
 (use-package frame
   :ensure nil
-  :preface
-  (defun ian/set-default-font ()
-    (interactive)
-    (when (member "Consolas" (font-family-list))
-      (set-face-attribute 'default nil :family "Consolas"))
-    (set-face-attribute 'default nil :height 100 :weight 'normal))
+  ;; :preface
+  ;; (defun ian/set-default-font ()
+  ;;   (interactive)
+  ;;   (when (member "Consolas" (font-family-list))
+  ;;     (set-face-attribute 'default nil :family "Consolas"))
+  ;;   (set-face-attribute 'default nil :height 100 :weight 'normal))
   :config
-  (ian/set-default-font)
-
-  (blink-cursor-mode -1)
+  ;; (ian/set-default-font)
   (set-background-color "#fefefc"))
+
 
 (use-package faces
   :ensure nil
@@ -128,32 +147,44 @@
                       :inherit nil
                       :box `(:line-width 3 :color ,"#f5f2ef" :style nil)))
 
+
+(use-package fringe
+  :ensure nil
+  ;; :custom-face (fringe ((t (:background "#fefefc"))))
+  :config (set-fringe-mode 16))
+
+
 (use-package hl-line
   :ensure nil
-  :custom-face (hl-line ((t (:background "#f0ffe0"))))
-  :config (global-hl-line-mode +1))
-
-(use-package tooltip
-  :ensure nil
-  :config (tooltip-mode -1))
-
-(use-package delsel
-  :ensure nil
-  :config (delete-selection-mode +1))
-
-(use-package scroll-bar
-  :ensure nil
-  :config (scroll-bar-mode -1))
-
-(use-package simple
-  :ensure nil
-  :config (column-number-mode +1))
-
-(use-package files
-  :ensure nil
+  :custom-face
+  (hl-line ((t (:background "#f0ffe0"))))
   :config
-  (setq make-backup-files nil)
-  (setq-default require-final-newline t))
+  (global-hl-line-mode +1))
+
+
+;; Auto-insert matching parenthesis
+(use-package elec-pair
+  :config (electric-pair-mode t))
+
+
+;; Highlight matching parenthesis
+(use-package paren
+  :ensure nil
+  :init
+  (setq show-paren-delay 0)
+  :config
+  (setq show-paren-style 'expression)
+  (show-paren-mode +1))
+;; (set-face-attribute 'show-paren-match-expression nil :background "yellow")
+
+
+(use-package goto-last-change
+  :bind (("C-c \\" . goto-last-change)))
+
+
+;; Editable and saveable grep buffer
+(use-package wgrep)
+
 
 (use-package autorevert
   :ensure nil
@@ -163,72 +194,202 @@
         auto-revert-check-vc-info t
         global-auto-revert-non-file-buffers t))
 
-(use-package windmove
-  :ensure nil
-  :config (windmove-default-keybindings 'M)) ; use Meta + arrow keys to switch between visible buffers
-
-(use-package mwheel
-  :ensure nil
-  :config
-  (setq mouse-wheel-scroll-amount '(7 ((shift) . 1) ((meta) . hscroll) ((control) . text-scale))
-        mouse-wheel-progressive-speed nil))
-
-(use-package paren
-  :ensure nil
-  :init (setq show-paren-delay 0)
-  :config
-  (setq show-paren-style 'expression)
-  (show-paren-mode +1))
-
-;; Auto-insert matching parenthesis
-(use-package elec-pair
-  :ensure nil
-  :config (electric-pair-mode t))
-
-(use-package whitespace
-  :ensure nil
-  :hook (before-save . whitespace-cleanup))
 
 ;; Delete intermediate buffers when navigating through dired
 (use-package dired
   :ensure nil
   :config
   (setq delete-by-moving-to-trash t)
+  (setq ls-lisp-dirs-first t)
   (eval-after-load "dired"
     #'(lambda ()
         (put 'dired-find-alternate-file 'disabled nil)
         (define-key dired-mode-map (kbd "RET") #'dired-find-alternate-file))))
+
 
 ;; Dump custom-set-variables to a garbage file and don't load it
 (use-package cus-edit
   :ensure nil
   :config (setq custom-file (concat user-emacs-directory "custom.el")))
 
-;; Super charge Emacs' completion engine
-(use-package ido
-  :ensure nil
-  :init
-  (setq ido-enable-flex-matching t
-        ido-everywhere t
-        ido-auto-merge-work-directories-length -1
-        ido-create-new-buffer 'always)
-  :config
-  (ido-mode +1))
 
-(use-package uniquify
-  :ensure nil
+(use-package nerd-icons
+  :defer nil
+  :custom
+  (nerd-icons-color-icons nil))
+
+
+;; (use-package doom-modeline
+;;   :after (nerd-icons)
+;;   :custom
+;;   (inhibit-compacting-font-caches t)
+;;   ;; (doom-modeline-buffer-file-name-style 'relative-from-project)
+;;   (doom-modeline-buffer-file-name-style 'auto)
+;;   (setq doom-modeline-buffer-file-name-style 'buffer-name)
+;;   (doom-modeline-major-mode-icon nil)
+;;   (doom-modeline-buffer-encoding nil)
+;;   (doom-modeline-buffer-state-icon nil)
+;;   ;; (doom-modeline-lsp nil)
+;;   (doom-modeline-height 33)
+;;   ;; (doom-modeline-modal t)
+;;   ;; (doom-modeline-display-misc-in-all-mode-lines t)
+;;   ;; (doom-modeline-env-enable-go t)
+;;   (doom-modeline-position-column-line-format '("%l:%c"))
+;;   (doom-modeline-percent-position nil)
+;;   ;; (doom-modeline-total-line-number t)
+;;   ;; (doom-modeline-battery t) ;; `display-battery-mode'
+;;   ;; (doom-modeline-time t) ;; `display-time-mode'
+;;   (doom-modeline-highlight-modified-buffer-name t)
+;;   ;;
+;;   (size-indication-mode nil) ;; file size in the mode line
+;;   :hook (after-init . doom-modeline-mode))
+
+
+(use-package company
+  :hook (after-init . global-company-mode))
+
+
+(use-package doom-themes
+  :custom
+  (doom-themes-enable-bold t)
+  (doom-themes-enable-italic t)
   :config
-  (setq uniquify-buffer-name-style 'forward
-        uniquify-separator "/"
-        uniquify-after-kill-buffer-p t ; rename after killing uniquified
-        uniquify-ignore-buffers-re "^\\*")) ; don't muck with special buffers
+  ;; (load-theme 'doom-nord t)
+  ;; (load-theme 'doom-one-light t)
+  ;; (load-theme 'doom-nord-light t)
+  (doom-themes-visual-bell-config))
+
+
+(use-package pulsar
+  :defer t
+  :custom
+  (pulsar-pulse t)
+  (pulsar-delay 0.05)
+  (pulsar-iterations 10)
+  (pulsar-face 'pulsar-magenta)
+  (pulsar-highlight-face 'pulsar-yellow)
+  :init
+  (pulsar-global-mode 1)
+  :hook
+  (next-error . pulsar-pulse-line))
+
+
+;; displays the key bindings following your currently entered incomplete command
+(use-package which-key
+  :diminish which-key-mode
+  :config
+  (which-key-mode))
+
+
+;; Expand region increases the selected region by semantic units. Just keep pressing the key until it selects what you want.
+(use-package expand-region ; from: https://susamn.medium.com/ultimate-emacs-setup-with-documentation-in-org-mode-8ed32e2b3487
+  :defer t
+  :bind
+  ("M-m" . er/expand-region))
+
+
+;; Vertico provides a performant and minimalistic vertical completion UI based on the default completion system.
+(use-package vertico
+  :defer t
+  :custom
+  (read-file-name-completion-ignore-case t)
+  (read-buffer-completion-ignore-case t)
+  (completion-ignore-case t)
+  (enable-recursive-minibuffers t)
+  :init
+  (vertico-mode)
+  :config
+  (setq minibuffer-prompt-properties
+        '(read-only t cursor-intangible t face minibuffer-prompt))
+  (add-hook 'minibuffer-setup-hook #'cursor-intangible-mode))
+
+
+;; Configure directory extension.
+(use-package vertico-directory
+  :after vertico
+  :ensure nil
+  ;; More convenient directory navigation commands
+  :bind
+  (:map vertico-map
+        ("RET" . vertico-directory-enter)
+        ("DEL" . vertico-directory-delete-char)
+        ("M-DEL" . vertico-directory-delete-word))
+  ;; Tidy shadowed file names
+  :hook (rfn-eshadow-update-overlay . vertico-directory-tidy))
+
+
+;; Puni contains commands for soft deletion, which means deleting while keeping parentheses (or other delimiters, like html tags) balanced.
+(use-package puni
+  :defer t
+  :init
+  (puni-global-mode))
+
+
+(use-package crux
+  :defer t
+  :config
+  ;;(define-key lisp-mode-map (kbd "RET") #'dired-find-alternate-file)
+  :bind
+
+  ;; ((kbd [remap move-beginning-of-line]) #'crux-move-beginning-of-line)
+  ;; ((kbd "C-c o") #'crux-open-with)
+  ;; ([(shift return)] #'crux-smart-open-line)
+  ;; ;; ([(M return)] . crux-smart-open-line)
+  ;; ;; (global-set-key (kbd "s-r") #'crux-recentf-ido-find-file)
+  ;; ;; (global-set-key (kbd "C-<backspace>" #'crux-kill-line-backwards))
+  ;; ;; (global-set-key [remap kill-whole-line] #'crux-kill-whole-line)
+
+  ;; ("C-c C-w" . crux-transpose-windows)
+  ;; ;;  ("C-a"     . crux-move-beginning-of-line)
+  ;; ("C-S-k"      . crux-kill-whole-line)
+  ;; ("C-c k"      . crux-kill-other-buffers)
+
+  ;; ("C-c d"      . crux-duplicate-current-line-or-region)
+  ;; ("C-c M-d"    . crux-duplicate-and-comment-current-line-or-region)
+
+
+  ;; ;; ("C-c r"      . crux-rename-buffer-and-file)
+
+  ;; (global-set-key (kbd "C-M-q") 'crux-indent-defun)
+
+  )
+
+
+
+
+;; (global-set-key (kbd "C-x k") 'kill-this-buffer)
+;; (global-set-key (kbd "C-w") 'backward-kill-word)
+;; (global-set-key (kbd "M-o") 'other-window)
+
+
+
+;; (define-key (current-global-map) [remap kill-line] 'my-homemade-kill-line)
+
+
+;; displays current match and total matches information in the mode-line in various search modes
+(use-package anzu
+  :bind
+  (("<remap> <query-replace>" . 'anzu-query-replace)
+   ("<remap> <query-replace-regexp>" . 'anzu-query-replace-regexp))
+  :config
+  (global-anzu-mode t)
+  (set-face-foreground 'anzu-mode-line "#FF6F00"))
+
+
+(use-package ahk-mode
+  :config
+  (setq ahk-indentation 2))
+
 
 (use-package ediff
   :ensure nil
   :init
-  (add-to-list 'exec-path "c:/home/scoop/apps/git/current/usr/bin")
+  (add-to-list 'exec-path "c:/bin/scoop/apps/git/current/usr/bin")
+  (setenv "PATH" (concat (getenv "PATH") ";" "c:/bin/scoop/apps/git/current/usr/bin"))
   :config
   ;; from: https://emacs.stackexchange.com/questions/7482/restoring-windows-and-layout-after-an-ediff-session/7486
+  ;;
+  ;; check alternative in: https://github.com/Gavinok/emacs.d/blob/main/init.el
 
   (defvar ediff-last-windows nil
     "Last ediff window configuration.")
@@ -304,7 +465,8 @@
     (extra-gitgrep-command t)
     (select-window (get-buffer-window "*grep*")))
 
-  (setq extra-gitgrep-file-extensions "*.lisp *.cl"))
+  (setq extra-gitgrep-file-extensions "*.el *.lisp *.cl *.lua *.fnl *.java *.kt *.ahk *.js *.ts *.html"))
+
 
 (use-package hideshow
   :ensure nil
@@ -362,12 +524,17 @@
   :hook (prog-mode . hide-show-fn)
   :config (setq hs-isearch-open 'code))
 
-;; -----------------------------------------------------------------------------
 
-(use-package expand-region ; from: https://susamn.medium.com/ultimate-emacs-setup-with-documentation-in-org-mode-8ed32e2b3487
-  :ensure t
-  :bind ("M-m" . er/expand-region))
+;; (use-package diminish
+;;   :defer t
+;;   :config
+;;   (diminish 'eldoc-mode)
+;;   (diminish 'anzu-mode)
+;;   (diminish 'hs-minor-mode)
+;;   )
 
+
+;; hide all minor modes
 (use-package minions ; from: https://susamn.medium.com/ultimate-emacs-setup-with-documentation-in-org-mode-8ed32e2b3487
   :config
   (setq minions-mode-line-lighter ""
@@ -375,71 +542,6 @@
   (global-set-key [S-down-mouse-3] 'minions-minor-modes-menu)
   (minions-mode +1))
 
-(use-package ahk-mode
-  :config
-  (setq ahk-indentation 2))
-
-(use-package crux
-  :bind
-  (("C-a"        . crux-move-beginning-of-line)
-   ("C-S-k"      . crux-kill-whole-line)
-   ("C-c k"      . crux-kill-other-buffers)
-   ("C-M-z"      . crux-indent-defun)
-   ("C-c d"      . crux-duplicate-current-line-or-region)
-   ("C-c M-d"    . crux-duplicate-and-comment-current-line-or-region)
-   ("C-c r"      . crux-rename-buffer-and-file)
-   ([(M return)] . crux-smart-open-line)))
-
-(use-package anzu
-  :bind
-  (("<remap> <query-replace>" . 'anzu-query-replace)
-   ("<remap> <query-replace-regexp>" . 'anzu-query-replace-regexp))
-  :config
-  (global-anzu-mode t)
-  (set-face-foreground 'anzu-mode-line "#FF6F00"))
-
-(use-package corfu
-  :bind
-  (:map corfu-map
-        ;; ("<escape>" . corfu-quit)
-        ;; ([escape] . corfu-quit)
-        ;; ("TAB" . corfu-complete)
-        ;; ([tab] . corfu-complete)
-        ("SPC" . (lambda ()
-                   (interactive)
-                   (corfu-insert)
-                   (just-one-space)))
-        ;; ("TAB" . corfu-next)
-        ;; ([tab] . corfu-next)
-        ;; ("S-TAB" . corfu-previous)
-        ;; ([backtab] . corfu-previous)
-        )
-  :custom
-  (corfu-cycle nil)  ; disable cycling for `corfu-next/previous'
-  (corfu-auto t)     ; enable auto completion (also complete with TAB)
-  (corfu-quit-at-boundary t) ; automatically quit at word boundary
-  (corfu-quit-no-match t)    ; automatically quit if there is no match
-  (corfu-preview-current 'insert)   ; insert current candidate preview
-  (corfu-preselect-first t)
-  (corfu-scroll-margin 0)
-  :init
-  (global-corfu-mode +1))
-
-;; a few more useful configurations for corfu
-(use-package emacs
-  :ensure nil
-  :init
-  ;; (setq completion-cycle-threshold 3) ; TAB cycle if there are only few candidates
-  (setq tab-always-indent 'complete))
-
-(use-package auto-package-update
-  :custom
-  (auto-package-update-interval 7)
-  (auto-package-update-prompt-before-update t)
-  (auto-package-update-hide-results t)
-  :config
-  (auto-package-update-maybe)
-  (auto-package-update-at-time "09:00"))
 
 ;; -- magit --------------------------------------------------------------------
 
@@ -447,6 +549,7 @@
 ;; https://github.com/bradwright/emacs-d/blob/master/packages/init-magit.el
 ;; http://whattheemacsd.com/setup-magit.el-01.html
 (use-package magit
+  :defer t
   :preface
   (defun magit-status-around (orig-fun &rest args)
     (window-configuration-to-register 'x)
@@ -465,34 +568,17 @@
   (advice-add 'magit-status :around #'magit-status-around) ; check: https://www.gnu.org/software/emacs/manual/html_node/elisp/Porting-old-advice.html
   (setq magit-display-buffer-function 'magit-display-buffer-fullframe-status-v1))
 
-;; from: https://github.com/munen/emacs.d/
-(use-package magit-delta
+
+(use-package magit-delta ; check  or https://scripter.co/using-git-delta-with-magit
   :hook (magit-mode . magit-delta-mode))
+
 
 ;; -- lisp ---------------------------------------------------------------------
 
 (use-package sly
-  :config (setq inferior-lisp-program (expand-file-name "C:/home/scoop/apps/sbcl/current/sbcl.exe")))
+  :config
+  (setq inferior-lisp-program (expand-file-name "C:/bin/scoop/apps/sbcl/current/sbcl.exe")))
 
-;; -------------------------------------
-
-;; from: https://www.john2x.com/emacs.html
-
-(defconst elispy-modes
-  '(emacs-lisp-mode ielm-mode)
-  "Emacs major modes.")
-
-(defconst lispy-modes
-  (append elispy-modes
-          '(lisp-mode inferior-lisp-mode lisp-interaction-mode clojure-mode cider-mode-hook cider-repl-mode-hook))
-  "All lispy major modes.")
-
-(defun maybe-check-parens ()
-  "Run `check-parens' if this is a lispy mode."
-  (when (memq major-mode lispy-modes)
-    (check-parens)))
-
-(add-hook 'after-save-hook 'maybe-check-parens)
 
 ;; -- custom code --------------------------------------------------------------
 
@@ -578,11 +664,11 @@
 (defun open-buffer-path ()
   (interactive)
   (cl-flet ((w32ify-path (path)
-                         (convert-standard-filename (replace-regexp-in-string "/" "\\" path t t))))
+              (convert-standard-filename (replace-regexp-in-string "/" "\\" path t t))))
     (cond (buffer-file-name
            (w32-shell-execute "open" "explorer" (concat "/e,/select," (w32ify-path buffer-file-name))))
           (default-directory
-            (w32-shell-execute "explore" (w32ify-path default-directory)))
+           (w32-shell-execute "explore" (w32ify-path default-directory)))
           (t
            (user-error "Current buffer not associated with any path")))))
 
@@ -609,22 +695,15 @@
              "Window '%s' is normal")
            (current-buffer)))
 
+
 ;; -- global keys --------------------------------------------------------------
 
 (global-unset-key (kbd "C-z"))
 (global-unset-key (kbd "C-x C-z"))
 
-(global-set-key (kbd "C-x k") 'kill-this-buffer)
-
-(global-set-key (kbd "<C-tab>") 'other-window)
-(global-set-key (kbd "C-S-<tab>") (lambda () (interactive) (other-window -1)))
-
-(global-set-key "\M-i" "\C-u1\M-v") ; scroll up
-(global-set-key "\M-k" "\C-u1\C-v") ; scroll down
-
 (global-set-key (kbd "C-M-#") (open-file user-init-file))
-(global-set-key (kbd "C-M-$") (open-file "c:/home/.autohotkey/autohotkey.ahk"))
-(global-set-key (kbd "C-M-&") (open-file "c:/home/.bashrc"))
+(global-set-key (kbd "C-M-$") (open-file "d:/.autohotkey/autohotkey.ahk"))
+(global-set-key (kbd "C-M-&") (open-file "d:/.bashrc"))
 
 (global-set-key (kbd "C-c c") 'comment-or-uncomment-region-or-line)
 (global-set-key (kbd "M-SPC") 'my-just-one-space)
@@ -640,6 +719,75 @@
 (global-set-key [f11] 'prelude-copy-file-name-to-clipboard)
 (global-set-key [f12] 'open-buffer-path)
 
-(define-key isearch-mode-map (kbd "C-d") 'sacha/isearch-yank-current-word) ; Type C-s (isearch-forward) to start interactively searching forward, and type C-x to get the current word.
 (global-set-key '[C-M-up] 'sacha/search-word-backward)
 (global-set-key '[C-M-down] 'sacha/search-word-forward)
+
+(global-set-key (kbd "<C-tab>") 'other-window)
+(global-set-key (kbd "C-S-<tab>") (lambda () (interactive) (other-window -1)))
+
+(global-set-key (kbd "M-<up>") "\C-u1\M-v") ; scroll up
+(global-set-key (kbd "M-<down>") "\C-u1\C-v") ; scroll down
+
+(define-key isearch-mode-map (kbd "C-d") 'sacha/isearch-yank-current-word) ; Type C-s (isearch-forward) to start interactively searching forward, and type C-x to get the current word.
+
+;; -----------------------------------------------------------------------------
+
+
+;; CHECK THIS OUT:
+;;
+;; https://github.com/wolray/symbol-overlay?tab=readme-ov-file
+;;    https://github.com/nschum/highlight-symbol.el
+;;
+;; https://hieuphay.com/doom-emacs-config/
+;; https://www.gonsie.com/blorg/modeline.html
+
+
+;; REFERENCES:
+;;
+;; https://vishesh.github.io/emacs/editors/2023/01/25/lean-emacs-config.html
+;; https://github.com/munen/emacs.d/
+
+;; https://kristofferbalintona.me/posts/202202211546/
+;; https://ianyepan.github.io/posts/setting-up-use-package/
+;; https://suvratapte.com/configuring-emacs-from-scratch-use-package/
+
+
+;; REQUIREMENTS:
+;;
+;; * delta -- use in package `magit-deltasc'
+;;
+;; for delta ensure in .gitconfig
+;; [core]
+;;     pager = delta
+;;     editor = \"C:/home/scoop/apps/gitextensions/current/gitextensions.exe\" fileeditor
+;; [interactive]
+;;     diffFilter = delta --color-only
+;; [delta]
+;;     navigate = true
+;;     light = false
+
+
+;; PROVIDED:
+;;
+;; + start a command and after a while shows helper info for commands (by `which-key')
+
+
+
+
+;; from: sachachua.com 2024-02-26 Emacs news >> https://blog.dornea.nu/2024/02/22/from-doom-to-vanilla-emacs/ >>
+;;       https://config.phundrak.com/emacs/basic-config.html >>
+;;       https://tecosaur.github.io/emacs-config/config.html
+
+
+
+
+;; (setq-default fill-column 79)
+;; (global-display-fill-column-indicator-mode 1)
+;; (add-hook 'java-mode-hook (lambda () (setq fill-column 120)))
+;; (add-hook 'python-mode-hook (lambda () (setq fill-column 79)))
+
+
+
+(global-set-key (kbd "C-x k") 'kill-this-buffer)
+(global-set-key (kbd "C-w") 'backward-kill-word)
+(global-set-key (kbd "M-o") 'other-window)
