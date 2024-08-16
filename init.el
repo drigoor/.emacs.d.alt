@@ -389,7 +389,8 @@
   (("C-x g" . magit-status) ; from: http://blog.jr0cket.co.uk/2012/12/driving-git-with-emacs-pure-magic-with.html
    ("C-c b" . magit-blame)
    :map magit-status-mode-map
-   ("q" . magit-quit-session))
+   ("q" . magit-quit-session)
+   ("<return>" . magit-diff-visit-file-other-window))
   :config
   (advice-add 'magit-status :around #'magit-status-around) ; check: https://www.gnu.org/software/emacs/manual/html_node/elisp/Porting-old-advice.html
   (setq magit-display-buffer-function 'magit-display-buffer-fullframe-status-v1)
