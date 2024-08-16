@@ -16,7 +16,7 @@
 
 ;; better scrolling experience
 (setq scroll-margin 0
-      scroll-conservatively 101	; > 100
+      ;; scroll-conservatively 101	; > 100
       ;; scroll-preserve-screen-position t
       auto-window-vscroll nil)
 
