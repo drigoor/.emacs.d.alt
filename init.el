@@ -14,12 +14,6 @@
 (global-so-long-mode +1)
 (delete-selection-mode +1)
 
-;; better scrolling experience
-(setq scroll-margin 0
-      ;; scroll-conservatively 101      ; > 100
-      ;; scroll-preserve-screen-position t
-      auto-window-vscroll nil)
-
 (setq-default indent-tabs-mode nil
               show-trailing-whitespace t
               truncate-lines t)
@@ -40,6 +34,9 @@
 
 (setq use-short-answers t) ; same as `(fset 'yes-or-no-p 'y-or-n-p)'
 (setq confirm-nonexistent-file-or-buffer nil) ; no annoying confirmation if a file or buffer does not exist when you use C-x C-f or C-x b
+
+(setq echo-keystrokes 0.1
+      mode-line-percent-position "")
 
 (setq-default line-spacing 0.15)
 
@@ -68,18 +65,39 @@
                     :box `(:line-width 3 :color ,"#f5f2ef" :style nil))
 
 
+;; from: https://www.john2x.com/emacs.html
+
+(defconst elispy-modes
+  '(emacs-lisp-mode ielm-mode)
+  "Emacs major modes.")
+
+(defconst lispy-modes
+  (append elispy-modes
+          '(lisp-mode inferior-lisp-mode lisp-interaction-mode clojure-mode cider-mode-hook cider-repl-mode-hook))
+  "All lispy major modes.")
+
+(defun maybe-check-parens ()
+  "Run `check-parens' if this is a lispy mode."
+  (when (memq major-mode lispy-modes)
+    (check-parens)))
+
+(add-hook 'after-save-hook 'maybe-check-parens)
+
+
+;; adapted from: https://www.juniordeveloperdiaries.com/emacs-intro/
+
 (require 'package)
-(add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
-(setq package-enable-at-startup nil)
+(add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/"))
 (package-initialize)
 
-
-;; Setting up the package manager. Install if missing.
 (unless (package-installed-p 'use-package)
   (package-refresh-contents)
   (package-install 'use-package))
-(eval-and-compile
-  (setq use-package-always-ensure t))
+
+(require 'use-package)
+(setq use-package-verbose t ; package install logging: packages break, it's nice to know why
+      use-package-always-ensure t ; make sure packages are downloaded if not present
+      use-package-compute-statistics t) ; for `use-package-report'
 
 
 ;;; --------------------------------------------------------------------
@@ -87,7 +105,6 @@
 ;;; use-package with :ensure nil
 
 
-;; Super charge Emacs' completion engine
 (use-package ido
   :ensure nil
   :init
@@ -126,11 +143,7 @@
 (use-package autorevert
   :ensure nil
   :config
-  (global-auto-revert-mode +1) ; revert buffers automatically when underlying files are changed externally
-  (setq auto-revert-interval 2
-        auto-revert-check-vc-info t
-        global-auto-revert-non-file-buffers t
-        auto-revert-verbose nil))
+  (global-auto-revert-mode +1)) ; revert buffers automatically when underlying files are changed externally
 
 
 (use-package mwheel
@@ -139,13 +152,14 @@
                 mouse-wheel-progressive-speed nil))
 
 
-;; Reduce the highlight delay to instantly.
 (use-package paren
   :ensure nil
   :init (setq show-paren-delay 0)
   :config
-  (show-paren-mode +1)
-  (setq show-paren-style 'expression))
+  ;; (show-paren-mode +1) ; global activation...
+  (setq show-paren-style 'expression)
+  (set-face-attribute 'show-paren-match-expression nil :background "papaya whip")
+  :hook (prog-mode . show-paren-mode))
 
 
 ;; Auto-insert matching parenthesis.
@@ -277,6 +291,7 @@
 
   (setq extra-gitgrep-file-extensions "*.lisp *.cl"))
 
+
 (use-package hideshow
   :ensure nil
   :preface
@@ -343,33 +358,20 @@
   :hook (prog-mode . minions-mode))
 
 
+(use-package highlight-parentheses
+  :hook (prog-mode . highlight-parentheses-mode))
+
+
+(use-package csv-mode
+  :mode "\\.csv\\'")
+
+
 (use-package sly
   :config
   (setq inferior-lisp-program (expand-file-name "C:/bin/scoop/apps/sbcl/current/sbcl.exe")))
 
 
 (use-package sly-overlay)
-
-
-;; -------------------------------------
-
-;; from: https://www.john2x.com/emacs.html
-
-(defconst elispy-modes
-  '(emacs-lisp-mode ielm-mode)
-  "Emacs major modes.")
-
-(defconst lispy-modes
-  (append elispy-modes
-          '(lisp-mode inferior-lisp-mode lisp-interaction-mode clojure-mode cider-mode-hook cider-repl-mode-hook))
-  "All lispy major modes.")
-
-(defun maybe-check-parens ()
-  "Run `check-parens' if this is a lispy mode."
-  (when (memq major-mode lispy-modes)
-    (check-parens)))
-
-(add-hook 'after-save-hook 'maybe-check-parens)
 
 
 ;; references:
@@ -407,6 +409,7 @@
   ;; [delta]
   ;;     navigate = true
   ;;     light = false
+  :after magit
   :hook (magit-mode . magit-delta-mode))
 
 
@@ -434,7 +437,6 @@
 
 
 (use-package crux
-  :ensure t
   :bind
   ([remap delete-char] . #'crux-duplicate-current-line-or-region)
   ([remap move-beginning-of-line] . #'crux-move-beginning-of-line)
@@ -458,16 +460,30 @@
 
 (use-package company
   :bind (:map company-active-map ; Navigate in completion minibuffer with `C-n` and `C-p`.
+              ("<tab>" . company-complete-common-or-cycle) ; company-indent-or-complete-common
+              ("<backtab>" . (lambda ()
+                               (interactive)
+                               (company-complete-common-or-cycle -1)))
+              ("M-/" . company-complete)
+              ("M-." . company-show-location)
               ("C-n" . company-select-next)
               ("C-p" . company-select-previous))
   :hook (prog-mode . company-mode)
   :config
-  (setq company-minimum-prefix-length 1
-        company-idle-delay 0.1 ; provide instant autocompletion
+  (setq company-idle-delay 0.3
+        company-minimum-prefix-length 1
         company-selection-wrap-around t
         company-tooltip-align-annotations t
         company-frontends '(company-pseudo-tooltip-frontend ; show tooltip even for single candidate
                             company-echo-metadata-frontend)))
+
+
+(use-package company-quickhelp
+  :after company
+  :hook (company-mode . company-quickhelp-local-mode)
+  :config
+  (setq company-quickhelp-delay 0.5)
+  (define-key company-active-map (kbd "M-h") #'company-quickhelp-manual-begin))
 
 
 ;; displays the key bindings following your currently entered incomplete command
@@ -476,6 +492,33 @@
   (which-key-mode +1)
   (setq which-key-idle-delay 0.4
         which-key-idle-secondary-delay 0.4))
+
+
+;; sort M-x by recently used
+(use-package smex
+  :bind ("M-x" . smex)
+  :config (smex-initialize))
+
+
+(use-package smartparens
+  :init (require 'smartparens-config)
+  :config (smartparens-global-mode t)
+  :bind (("C-(" . 'sp-forward-slurp-sexp)
+         ("C-)" . 'sp-backward-slurp-sexp)))
+
+
+(use-package rainbow-delimiters
+  :config
+  ;; (set-face-foreground 'rainbow-delimiters-depth-1-face "#c66")  ; red
+  ;; (set-face-foreground 'rainbow-delimiters-depth-2-face "#6c6")  ; green
+  ;; (set-face-foreground 'rainbow-delimiters-depth-3-face "#69f")  ; blue
+  ;; (set-face-foreground 'rainbow-delimiters-depth-4-face "#cc6")  ; yellow
+  ;; (set-face-foreground 'rainbow-delimiters-depth-5-face "#6cc")  ; cyan
+  ;; (set-face-foreground 'rainbow-delimiters-depth-6-face "#c6c")  ; magenta
+  ;; (set-face-foreground 'rainbow-delimiters-depth-7-face "#ccc")  ; light gray
+  ;; (set-face-foreground 'rainbow-delimiters-depth-8-face "#999")  ; medium gray
+  ;; (set-face-foreground 'rainbow-delimiters-depth-9-face "#666")  ; dark gray
+  :hook (prog-mode . rainbow-delimiters-mode))
 
 
 ;; -- custom code --------------------------------------------------------------
@@ -604,12 +647,42 @@
            (current-buffer)))
 
 
+(defun scroll-up-with-fixed-cursor ()
+  (interactive)
+  (forward-line 1)
+  (scroll-up 1))
+
+
+(defun scroll-down-with-fixed-cursor ()
+  (interactive)
+  (forward-line -1)
+  (scroll-down 1))
+
+
+(defun find-my-buffer (name)
+  (dolist (buffer (buffer-list))
+    (when (string-match name (buffer-name buffer))
+      (return buffer))))
+
+
 ;; -- global keys --------------------------------------------------------------
 
 
 (global-unset-key (kbd "C-z"))
-(global-set-key (kbd "C-z") #'undo)
 (global-unset-key (kbd "C-x C-z"))
+;; (global-set-key (kbd "C-z") #'undo)
+
+(global-set-key "\M-i" "\C-u1\M-v")
+(global-set-key "\M-k" "\C-u1\C-v")
+
+(global-set-key (kbd "M-<up>") "\C-u1\M-v")
+(global-set-key (kbd "M-<down>") "\C-u1\C-v")
+
+(global-set-key (kbd "C-M-i") 'scroll-down-with-fixed-cursor)
+(global-set-key (kbd "C-M-k") 'scroll-up-with-fixed-cursor)
+
+(global-set-key (kbd "M-<up>") "\C-u1\M-v") ; scroll up
+(global-set-key (kbd "M-<down>") "\C-u1\C-v") ; scroll down
 
 (global-set-key (kbd "C-x k") 'kill-this-buffer)
 
@@ -628,34 +701,14 @@
 (global-set-key [f11] 'prelude-copy-file-name-to-clipboard)
 (global-set-key [f12] 'open-buffer-path)
 
-(global-set-key '[C-M-up] 'sacha/search-word-backward)
-(global-set-key '[C-M-down] 'sacha/search-word-forward)
-
 (global-set-key (kbd "M-o") 'other-window)
 (global-set-key (kbd "C-<tab>") 'other-window)
 (global-set-key (kbd "C-S-<tab>") (lambda () (interactive) (other-window -1)))
 
-(global-set-key (kbd "M-<up>") "\C-u1\M-v") ; scroll up
-(global-set-key (kbd "M-<down>") "\C-u1\C-v") ; scroll down
+;; (global-set-key (kbd "C-c u") #'browse-url-at-point
+
+(global-set-key '[C-M-up] 'sacha/search-word-backward)
+(global-set-key '[C-M-down] 'sacha/search-word-forward)
 
 (define-key isearch-mode-map (kbd "C-d") 'sacha/isearch-yank-current-word) ; Type C-s (isearch-forward) to start interactively searching forward, and type C-x to get the current word.
 
-
-(setq-default mode-line-format ; from: https://www.gnu.org/software/emacs/manual/html_node/elisp/Mode-Line-Variables.html
-           '("-"
-             mode-line-mule-info
-             mode-line-modified
-             mode-line-frame-identification
-             mode-line-buffer-identification
-             "   "
-             mode-line-position
-             (vc-mode vc-mode)
-             "   "
-             mode-line-modes
-             (which-function-mode ("" which-func-format "--"))
-             (global-mode-string ("--" global-mode-string))
-             ;; "-%-"
-             ))
-
-(setq echo-keystrokes 0.1
-      mode-line-percent-position "")
