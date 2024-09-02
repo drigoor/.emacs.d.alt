@@ -16,13 +16,13 @@
 
 ;; better scrolling experience
 (setq scroll-margin 0
-      ;; scroll-conservatively 101	; > 100
+      ;; scroll-conservatively 101      ; > 100
       ;; scroll-preserve-screen-position t
       auto-window-vscroll nil)
 
 (setq-default indent-tabs-mode nil
-	      show-trailing-whitespace t
-	      truncate-lines t)
+              show-trailing-whitespace t
+              truncate-lines t)
 
 (setq frame-title-format '("%b")
       frame-resize-pixelwise t
@@ -44,28 +44,28 @@
 (setq-default line-spacing 0.15)
 
 (set-face-attribute 'default nil
-		    :family "Consolas"
-		    :height 100
-		    :weight 'normal) ; (set-frame-font "Consolas 10" nil t) ;; wsl --> Monospace 12
+                    :family "Consolas"
+                    :height 100
+                    :weight 'normal) ; (set-frame-font "Consolas 10" nil t) ;; wsl --> Monospace 12
 (set-background-color "#fefefc")
 (set-face-background 'cursor "orange")
 (set-face-background 'region "#ffffcc")
 (set-face-attribute 'mode-line nil
-		    :height 1.0
-		    :foreground (face-foreground 'default)
-		    :foreground "#605e57"
-		    :background "#f2ecdb"
-		    :overline nil
-		    :underline nil
-		    :box `(:line-width 3 :color ,"#f0e0d0" :style nil))
+                    :height 1.0
+                    :foreground (face-foreground 'default)
+                    :foreground "#605e57"
+                    :background "#f2ecdb"
+                    :overline nil
+                    :underline nil
+                    :box `(:line-width 3 :color ,"#f0e0d0" :style nil))
 (set-face-attribute 'mode-line-inactive nil
-		    :height 1.0
-		    :foreground "#aba9a7"
-		    :background "#faf8f4"
-		    :overline nil
-		    :underline nil
-		    :inherit nil
-		    :box `(:line-width 3 :color ,"#f5f2ef" :style nil))
+                    :height 1.0
+                    :foreground "#aba9a7"
+                    :background "#faf8f4"
+                    :overline nil
+                    :underline nil
+                    :inherit nil
+                    :box `(:line-width 3 :color ,"#f5f2ef" :style nil))
 
 
 (require 'package)
@@ -92,10 +92,10 @@
   :ensure nil
   :init
   (setq ido-everywhere t
-	ido-enable-flex-matching t
-	ido-create-new-buffer 'always
-	ido-auto-merge-work-directories-length -1
-	ido-file-extensions-order '(".lisp" ".el" ".txt"))
+        ido-enable-flex-matching t
+        ido-create-new-buffer 'always
+        ido-auto-merge-work-directories-length -1
+        ido-file-extensions-order '(".lisp" ".el" ".txt"))
   :config
   (ido-mode +1))
 
@@ -118,8 +118,8 @@
   :ensure nil
   :config
   (setq confirm-kill-processes nil
-	create-lockfiles nil ; don't create .# files (crashes 'npm start')
-	make-backup-files nil)
+        create-lockfiles nil ; don't create .# files (crashes 'npm start')
+        make-backup-files nil)
   (setq-default require-final-newline t))
 
 
@@ -128,15 +128,15 @@
   :config
   (global-auto-revert-mode +1) ; revert buffers automatically when underlying files are changed externally
   (setq auto-revert-interval 2
-	auto-revert-check-vc-info t
-	global-auto-revert-non-file-buffers t
-	auto-revert-verbose nil))
+        auto-revert-check-vc-info t
+        global-auto-revert-non-file-buffers t
+        auto-revert-verbose nil))
 
 
 (use-package mwheel
   :ensure nil
   :config (setq mouse-wheel-scroll-amount '(2 ((shift) . 1)) ; '(7 ((shift) . 1) ((meta) . hscroll) ((control) . text-scale))
-		mouse-wheel-progressive-speed nil))
+                mouse-wheel-progressive-speed nil))
 
 
 ;; Reduce the highlight delay to instantly.
@@ -162,8 +162,8 @@
   (setq ls-lisp-dirs-first t)
   (eval-after-load "dired"
     #'(lambda ()
-	(put 'dired-find-alternate-file 'disabled nil)
-	(define-key dired-mode-map (kbd "RET") #'dired-find-alternate-file))))
+        (put 'dired-find-alternate-file 'disabled nil)
+        (define-key dired-mode-map (kbd "RET") #'dired-find-alternate-file))))
 
 
 ;; The Emacs default split doesn't seem too intuitive for most users.
@@ -226,7 +226,7 @@
     ad-do-it)
 
   (setq ediff-window-setup-function #'ediff-setup-windows-plain
-	ediff-split-window-function #'split-window-horizontally))
+        ediff-split-window-function #'split-window-horizontally))
 
 
 (use-package grep
@@ -458,16 +458,16 @@
 
 (use-package company
   :bind (:map company-active-map ; Navigate in completion minibuffer with `C-n` and `C-p`.
-	      ("C-n" . company-select-next)
-	      ("C-p" . company-select-previous))
+              ("C-n" . company-select-next)
+              ("C-p" . company-select-previous))
   :hook (prog-mode . company-mode)
   :config
   (setq company-minimum-prefix-length 1
-	company-idle-delay 0.1 ; provide instant autocompletion
-	company-selection-wrap-around t
-	company-tooltip-align-annotations t
-	company-frontends '(company-pseudo-tooltip-frontend ; show tooltip even for single candidate
-			    company-echo-metadata-frontend)))
+        company-idle-delay 0.1 ; provide instant autocompletion
+        company-selection-wrap-around t
+        company-tooltip-align-annotations t
+        company-frontends '(company-pseudo-tooltip-frontend ; show tooltip even for single candidate
+                            company-echo-metadata-frontend)))
 
 
 ;; displays the key bindings following your currently entered incomplete command
@@ -475,7 +475,7 @@
   :config
   (which-key-mode +1)
   (setq which-key-idle-delay 0.4
-	which-key-idle-secondary-delay 0.4))
+        which-key-idle-secondary-delay 0.4))
 
 
 ;; -- custom code --------------------------------------------------------------
@@ -642,20 +642,20 @@
 
 
 (setq-default mode-line-format ; from: https://www.gnu.org/software/emacs/manual/html_node/elisp/Mode-Line-Variables.html
-	      '("-"
-		mode-line-mule-info
-		mode-line-modified
-		mode-line-frame-identification
-		mode-line-buffer-identification
-		"   "
-		mode-line-position
-		(vc-mode vc-mode)
-		"   "
-		mode-line-modes
-		(which-function-mode ("" which-func-format "--"))
-		(global-mode-string ("--" global-mode-string))
-		;; "-%-"
-		))
+           '("-"
+             mode-line-mule-info
+             mode-line-modified
+             mode-line-frame-identification
+             mode-line-buffer-identification
+             "   "
+             mode-line-position
+             (vc-mode vc-mode)
+             "   "
+             mode-line-modes
+             (which-function-mode ("" which-func-format "--"))
+             (global-mode-string ("--" global-mode-string))
+             ;; "-%-"
+             ))
 
 (setq echo-keystrokes 0.1
       mode-line-percent-position "")
