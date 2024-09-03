@@ -65,6 +65,12 @@
                     :box `(:line-width 3 :color ,"#f5f2ef" :style nil))
 
 
+(add-hook 'emacs-startup-hook #'(lambda ()
+                                  (message "Emacs loaded in %s with %d garbage collections."
+                                           (emacs-init-time "%.2f seconds")
+                                           gcs-done)))
+
+
 ;; from: https://www.john2x.com/emacs.html
 
 (defconst elispy-modes
@@ -711,4 +717,3 @@
 (global-set-key '[C-M-down] 'sacha/search-word-forward)
 
 (define-key isearch-mode-map (kbd "C-d") 'sacha/isearch-yank-current-word) ; Type C-s (isearch-forward) to start interactively searching forward, and type C-x to get the current word.
-
