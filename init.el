@@ -65,10 +65,10 @@
                     :box `(:line-width 3 :color ,"#f5f2ef" :style nil))
 
 
-(add-hook 'emacs-startup-hook #'(lambda ()
-                                  (message "Emacs loaded in %s with %d garbage collections."
-                                           (emacs-init-time "%.2f seconds")
-                                           gcs-done)))
+(add-hook 'emacs-startup-hook (lambda ()
+                                (message "Emacs loaded in %s with %d garbage collections."
+                                         (emacs-init-time "%.2f seconds")
+                                         gcs-done)))
 
 
 ;; from: https://www.john2x.com/emacs.html
@@ -90,20 +90,19 @@
 (add-hook 'after-save-hook 'maybe-check-parens)
 
 
-;; adapted from: https://www.juniordeveloperdiaries.com/emacs-intro/
-
 (require 'package)
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/"))
 (package-initialize)
 
-(unless (package-installed-p 'use-package)
-  (package-refresh-contents)
-  (package-install 'use-package))
+;; (package-refresh-contents)
 
 (require 'use-package)
-(setq use-package-verbose t ; package install logging: packages break, it's nice to know why
+(setq use-package-verbose nil ; package install logging: packages break, it's nice to know why
       use-package-always-ensure t ; make sure packages are downloaded if not present
       use-package-compute-statistics t) ; for `use-package-report'
+
+
+(server-mode)
 
 
 ;;; --------------------------------------------------------------------
@@ -114,10 +113,7 @@
 (use-package ido
   :ensure nil
   :init
-  (setq ido-everywhere t
-        ido-enable-flex-matching t
-        ido-create-new-buffer 'always
-        ido-auto-merge-work-directories-length -1
+  (setq ido-create-new-buffer 'always
         ido-file-extensions-order '(".lisp" ".el" ".txt"))
   :config
   (ido-mode +1))
@@ -444,14 +440,14 @@
 
 (use-package crux
   :bind
-  ([remap delete-char] . #'crux-duplicate-current-line-or-region)
-  ([remap move-beginning-of-line] . #'crux-move-beginning-of-line)
-  ([remap kill-line] . #'crux-smart-kill-line)
-  ([remap indent-pp-sexp] . #'crux-indent-defun)
-  ([remap move-beginning-of-line] . #'crux-move-beginning-of-line)
+  ([remap move-beginning-of-line] . crux-move-beginning-of-line)
+  ([remap kill-line] . crux-smart-kill-line)
+  ([remap indent-pp-sexp] . crux-indent-defun)
+  ([remap move-beginning-of-line] . crux-move-beginning-of-line)
   ("C-S-k" . crux-kill-whole-line)
-  ([(M return)] . crux-smart-open-line)
-  ([(S return)] . crux-smart-open-line-above))
+  ("C-c d" . crux-duplicate-current-line-or-region)
+  ([(C <return>)] . crux-smart-open-line)
+  ([(S <return>)] . crux-smart-open-line-above))
 
 
 ;; displays current match and total matches information in the mode-line in various search modes
@@ -464,8 +460,11 @@
   (set-face-foreground 'anzu-mode-line "#FF6F00"))
 
 
+;; adapted from: https://github.com/shaneikennedy/emacs-light/blob/master/init.el
 (use-package company
-  :bind (:map company-active-map ; Navigate in completion minibuffer with `C-n` and `C-p`.
+  :bind (:map company-mode-map
+              ("C-M-i" . company-indent-or-complete-common)
+         :map company-active-map
               ("<tab>" . company-complete-common-or-cycle) ; company-indent-or-complete-common
               ("<backtab>" . (lambda ()
                                (interactive)
@@ -475,13 +474,23 @@
               ("C-n" . company-select-next)
               ("C-p" . company-select-previous))
   :hook (prog-mode . company-mode)
+  :custom
+  (company-idle-delay 0)
+  (company-dabbrev-downcase nil)
+  (company-show-numbers t)
+  (company-tooltip-limit 10)
+  (company-minimum-prefix-length 1)
+  (company-selection-wrap-around t)
+  (company-tooltip-align-annotations t)
+  (company-frontends '(company-pseudo-tooltip-frontend ; show tooltip even for single candidate
+                       company-echo-metadata-frontend))
   :config
-  (setq company-idle-delay 0.3
-        company-minimum-prefix-length 1
-        company-selection-wrap-around t
-        company-tooltip-align-annotations t
-        company-frontends '(company-pseudo-tooltip-frontend ; show tooltip even for single candidate
-                            company-echo-metadata-frontend)))
+  ;; (global-company-mode) ; global activation...
+  ;; use numbers 0-9 to select company completion candidates
+  (let ((map company-active-map))
+    (mapc (lambda (x) (define-key map (format "%d" x)
+                        `(lambda () (interactive) (company-complete-number ,x))))
+          (number-sequence 0 9))))
 
 
 (use-package company-quickhelp
@@ -504,13 +513,6 @@
 (use-package smex
   :bind ("M-x" . smex)
   :config (smex-initialize))
-
-
-(use-package smartparens
-  :init (require 'smartparens-config)
-  :config (smartparens-global-mode t)
-  :bind (("C-(" . 'sp-forward-slurp-sexp)
-         ("C-)" . 'sp-backward-slurp-sexp)))
 
 
 (use-package rainbow-delimiters
@@ -668,7 +670,7 @@
 (defun find-my-buffer (name)
   (dolist (buffer (buffer-list))
     (when (string-match name (buffer-name buffer))
-      (return buffer))))
+      (cl-return buffer))))
 
 
 ;; -- global keys --------------------------------------------------------------
