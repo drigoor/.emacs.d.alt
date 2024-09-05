@@ -1,9 +1,28 @@
 ;;; init.el --- that thing one wastes so much time -*- lexical-binding: t -*-
 
 
+(require 'package)
+(add-to-list 'package-archives '("gnu" . "https://elpa.gnu.org/packages/") t)
+(add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
+(package-initialize)
+
+(eval-when-compile
+  (require 'use-package)
+  (setq use-package-compute-statistics t  ; to use `use-package-report'
+        use-package-expand-minimally nil
+        use-package-verbose t
+        use-package-always-ensure t))
+
+
+;; -------------------------------------
+
+
+(server-mode)
+
 (tool-bar-mode -1)
 (menu-bar-mode -1)
 (scroll-bar-mode -1)
+
 (setq inhibit-startup-screen t)
 (setq initial-scratch-message "")
 (setq inhibit-startup-echo-area-message "user")
@@ -65,10 +84,14 @@
                     :box `(:line-width 3 :color ,"#f5f2ef" :style nil))
 
 
-(add-hook 'emacs-startup-hook (lambda ()
-                                (message "Emacs loaded in %s with %d garbage collections."
-                                         (emacs-init-time "%.2f seconds")
-                                         gcs-done)))
+(add-hook 'emacs-startup-hook ; could be also `after-init-hook'
+          (lambda ()
+            (message "Emacs loaded in %s with %d garbage collections."
+                     (emacs-init-time "%.2f seconds")
+                     gcs-done)))
+
+
+;; -------------------------------------
 
 
 ;; from: https://www.john2x.com/emacs.html
@@ -90,19 +113,22 @@
 (add-hook 'after-save-hook 'maybe-check-parens)
 
 
-(require 'package)
-(add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/"))
-(package-initialize)
-
-;; (package-refresh-contents)
-
-(require 'use-package)
-(setq use-package-verbose nil ; package install logging: packages break, it's nice to know why
-      use-package-always-ensure t ; make sure packages are downloaded if not present
-      use-package-compute-statistics t) ; for `use-package-report'
+;; -------------------------------------
 
 
-(server-mode)
+;; Eye level window centering in Emacs
+;; from: https://www.n16f.net/blog/eye-level-window-centering-in-emacs/
+(defcustom g-recenter-window-eye-level 0.2
+  "The relative position of the line considered as eye level in the
+current window, as a ratio between 0 and 1.")
+
+(defun g-recenter-window ()
+  "Scroll the window so that the current line is at eye level."
+  (interactive)
+  (let ((line (round (* (window-height) g-recenter-window-eye-level))))
+    (recenter line)))
+
+(global-set-key (kbd "C-l") 'g-recenter-window)
 
 
 ;;; --------------------------------------------------------------------
@@ -128,7 +154,7 @@
 
 (use-package hl-line
   :ensure nil
-  :custom-face (hl-line ((t (:background "#f0ffe0"))))
+  :custom-face (hl-line ((t (:background "#f0ffe0")))) ; same as: (set-face-background 'hl-line "#f0ffe0")
   :config
   (global-hl-line-mode +1))
 
@@ -161,6 +187,7 @@
   ;; (show-paren-mode +1) ; global activation...
   (setq show-paren-style 'expression)
   (set-face-attribute 'show-paren-match-expression nil :background "papaya whip")
+  (set-face-attribute 'show-paren-match nil :weight 'bold)
   :hook (prog-mode . show-paren-mode))
 
 
@@ -168,6 +195,17 @@
 (use-package elec-pair
   :ensure nil
   :hook (prog-mode . electric-pair-mode))
+
+
+;; from: http://trey-jackson.blogspot.pt/2008/01/emacs-tip-11-uniquify.html -- for reverse
+;; from: http://pragmaticemacs.com/emacs/uniquify-your-buffer-names/
+(use-package uniquify
+  :ensure nil
+  :config
+  (setq uniquify-buffer-name-style 'forward)
+  (setq uniquify-separator "/")
+  (setq uniquify-after-kill-buffer-p t)    ; rename after killing uniquified
+  (setq uniquify-ignore-buffers-re "^\\*")) ; don't muck with special buffers
 
 
 ;; Delete intermediate buffers when navigating through dired.
@@ -209,8 +247,6 @@
 
 (use-package ediff
   :ensure nil
-  :init
-  (add-to-list 'exec-path "c:/bin/scoop/apps/git/current/usr/bin")
   :config
   ;; from: https://emacs.stackexchange.com/questions/7482/restoring-windows-and-layout-after-an-ediff-session/7486
   ;;
@@ -433,14 +469,16 @@
 
 
 ;; Expand region increases the selected region by semantic units. Just keep pressing the key until it selects what you want.
-(use-package expand-region ; from: https://susamn.medium.com/ultimate-emacs-setup-with-documentation-in-org-mode-8ed32e2b3487
+;; from: https://susamn.medium.com/ultimate-emacs-setup-with-documentation-in-org-mode-8ed32e2b3487
+;; from: https://www.reddit.com/r/emacs/comments/yf14tl/what_are_your_favorite_packages_for_improving/
+(use-package expand-region
   :bind
-  ("M-m" . er/expand-region))
+  ("C-+" . er/expand-region)
+  ("C--" . er/contract-region))
 
 
 (use-package crux
   :bind
-  ([remap move-beginning-of-line] . crux-move-beginning-of-line)
   ([remap kill-line] . crux-smart-kill-line)
   ([remap indent-pp-sexp] . crux-indent-defun)
   ([remap move-beginning-of-line] . crux-move-beginning-of-line)
@@ -517,6 +555,10 @@
 
 (use-package rainbow-delimiters
   :config
+  (set-face-attribute 'rainbow-delimiters-unmatched-face nil :foreground (face-background 'default) :background (face-foreground 'error)) ; from: https://writequit.org/eos/eos-appearance.html
+
+  ;; use color: DarkGoldenrod3
+
   ;; (set-face-foreground 'rainbow-delimiters-depth-1-face "#c66")  ; red
   ;; (set-face-foreground 'rainbow-delimiters-depth-2-face "#6c6")  ; green
   ;; (set-face-foreground 'rainbow-delimiters-depth-3-face "#69f")  ; blue
@@ -699,13 +741,13 @@
 (global-set-key (kbd "C-M-&") (open-file "d:/.bashrc"))
 
 (global-set-key (kbd "C-c c") 'comment-or-uncomment-region-or-line)
-(global-set-key (kbd "M-SPC") 'my-just-one-space)
+(global-set-key [remap just-one-space] 'my-just-one-space)
 
 (global-set-key [f5] 'revert-buffer-no-confirm)
 (global-set-key [f6] (lambda () (interactive) (revert-buffer-no-confirm) (hs-hide-all-comments)))
 (global-set-key [f8] 'toggle-window-dedicated)
 (global-set-key [f9] 'whitespace-mode)
-(global-set-key [f10] 'toggle-truncate-lines)
+(global-set-key [f10] 'toggle-truncate-lines) ; alternative: visual-line-mode
 (global-set-key [f11] 'prelude-copy-file-name-to-clipboard)
 (global-set-key [f12] 'open-buffer-path)
 
@@ -719,3 +761,6 @@
 (global-set-key '[C-M-down] 'sacha/search-word-forward)
 
 (define-key isearch-mode-map (kbd "C-d") 'sacha/isearch-yank-current-word) ; Type C-s (isearch-forward) to start interactively searching forward, and type C-x to get the current word.
+
+
+(push "c:/bin/scoop/apps/git/current/usr/bin" exec-path)
