@@ -404,6 +404,10 @@ current window, as a ratio between 0 and 1.")
   :mode "\\.csv\\'")
 
 
+(use-package markdown-mode
+  :mode ("\\.md\\'" . markdown-mode))
+
+
 (use-package sly
   :config
   (setq inferior-lisp-program (expand-file-name "C:/bin/scoop/apps/sbcl/current/sbcl.exe")))
