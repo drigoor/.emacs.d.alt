@@ -118,7 +118,7 @@
 
 ;; Eye level window centering in Emacs
 ;; from: https://www.n16f.net/blog/eye-level-window-centering-in-emacs/
-(defcustom g-recenter-window-eye-level 0.2
+(defcustom g-recenter-window-eye-level 0.3
   "The relative position of the line considered as eye level in the
 current window, as a ratio between 0 and 1.")
 
@@ -128,7 +128,7 @@ current window, as a ratio between 0 and 1.")
   (let ((line (round (* (window-height) g-recenter-window-eye-level))))
     (recenter line)))
 
-(global-set-key (kbd "C-l") 'g-recenter-window)
+(global-set-key (kbd "C-l") 'g-recenter-window) ; use also C-M-l
 
 
 ;;; --------------------------------------------------------------------
@@ -484,12 +484,13 @@ current window, as a ratio between 0 and 1.")
 (use-package crux
   :bind
   ([remap kill-line] . crux-smart-kill-line)
-  ([remap indent-pp-sexp] . crux-indent-defun)
   ([remap move-beginning-of-line] . crux-move-beginning-of-line)
+  ([remap indent-sexp] . crux-indent-defun)
+  ([remap indent-pp-sexp] . crux-indent-defun)
   ("C-S-k" . crux-kill-whole-line)
   ("C-c d" . crux-duplicate-current-line-or-region)
-  ([(C <return>)] . crux-smart-open-line)
-  ([(S <return>)] . crux-smart-open-line-above))
+  ("C-<return>" . crux-smart-open-line)
+  ("S-<return>" . crux-smart-open-line-above))
 
 
 ;; displays current match and total matches information in the mode-line in various search modes
@@ -741,11 +742,11 @@ current window, as a ratio between 0 and 1.")
 (global-set-key (kbd "C-x k") 'kill-this-buffer)
 
 (global-set-key (kbd "C-M-#") (open-file user-init-file))
-(global-set-key (kbd "C-M-$") (open-file "d:/.autohotkey/autohotkey.ahk"))
-(global-set-key (kbd "C-M-&") (open-file "d:/.bashrc"))
+(global-set-key (kbd "C-M-$") (open-file "~/.autohotkey/autohotkey.ahk"))
+(global-set-key (kbd "C-M-&") (open-file "~/.bashrc"))
 
 (global-set-key (kbd "C-c c") 'comment-or-uncomment-region-or-line)
-(global-set-key [remap just-one-space] 'my-just-one-space)
+(global-set-key (kbd "M-SPC") 'my-just-one-space)
 
 (global-set-key [f5] 'revert-buffer-no-confirm)
 (global-set-key [f6] (lambda () (interactive) (revert-buffer-no-confirm) (hs-hide-all-comments)))
