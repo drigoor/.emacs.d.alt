@@ -429,6 +429,26 @@ current window, as a ratio between 0 and 1.")
     (interactive)
     (kill-buffer)
     (jump-to-register 'x))
+  (defun magit-section--open-temporarily--override (beg end) ; from: https://github.com/magit/magit/discussions/4608
+    (or (not (isearch-range-invisible beg end))
+        (and (eq search-invisible t)
+             (progn
+               (save-excursion
+                 (goto-char beg)
+                 (let ((section (magit-current-section)))
+                   (while section
+                     (let ((content (oref section content)))
+                       (if (and (magit-section-invisible-p section)
+                                (<= (or content (oref section start))
+                                    beg
+                                    (oref section end)))
+                           (progn
+                             (when content
+                               (magit-section-show section)
+                               (push section magit-section--opened-sections))
+                             (setq section (oref section parent)))
+                         (setq section nil))))))
+               (not (isearch-range-invisible beg end))))))
   :bind
   (("C-x g" . magit-status) ; from: http://blog.jr0cket.co.uk/2012/12/driving-git-with-emacs-pure-magic-with.html
    ("C-c b" . magit-blame)
@@ -437,6 +457,7 @@ current window, as a ratio between 0 and 1.")
    ("<return>" . magit-diff-visit-file-other-window))
   :config
   (advice-add 'magit-status :around #'magit-status-around) ; check: https://www.gnu.org/software/emacs/manual/html_node/elisp/Porting-old-advice.html
+  (advice-add 'magit-section--open-temporarily :override #'magit-section--open-temporarily--override) ; from: https://github.com/magit/magit/discussions/4608
   (setq magit-display-buffer-function 'magit-display-buffer-fullframe-status-v1)
   (magit-auto-revert-mode +1))
 
