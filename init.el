@@ -1,16 +1,24 @@
 ;;; init.el --- that thing one wastes so much time -*- lexical-binding: t -*-
 
 
+;; chato thing:
+;;
+;; Happy hacking—may your diffs be clean and your merges merciful. If
+;; Emacs throws more Windows-shaped tantrums, you know where to find
+;; me
+
 (require 'package)
 (add-to-list 'package-archives '("gnu" . "https://elpa.gnu.org/packages/") t)
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
 (package-initialize)
 
+(unless package-archive-contents
+  (package-refresh-contents))
+
 (eval-when-compile
   (require 'use-package)
   (setq use-package-compute-statistics t  ; to use `use-package-report'
-        use-package-expand-minimally nil
-        use-package-verbose t
+        use-package-verbose nil
         use-package-always-ensure t))
 
 
@@ -26,11 +34,12 @@
 (setq inhibit-startup-screen t)
 (setq initial-scratch-message "")
 (setq inhibit-startup-echo-area-message "user")
+(setq initial-major-mode 'fundamental-mode) ; from: https://tychoish.com/post/towards-faster-emacs-start-times/
 
 (blink-cursor-mode -1)
 (tooltip-mode -1)
 (column-number-mode +1)
-(global-so-long-mode +1)
+(global-so-long-mode +1) ;; see: https://stackoverflow.com/questions/18316665/how-to-improve-emacs-performance-when-view-large-file
 (delete-selection-mode +1)
 
 (setq-default indent-tabs-mode nil
@@ -147,9 +156,9 @@ current window, as a ratio between 0 and 1.")
 
 (use-package fringe
   :ensure nil
-  :custom-face (fringe ((t (:background "#fefefc"))))
+  :custom-face (fringe ((t (:background "#fcfcfc"))))
   :config
-  (set-fringe-mode 8))
+  (set-fringe-mode '(12 . 12)))
 
 
 (use-package hl-line
@@ -171,7 +180,8 @@ current window, as a ratio between 0 and 1.")
 (use-package autorevert
   :ensure nil
   :config
-  (global-auto-revert-mode +1)) ; revert buffers automatically when underlying files are changed externally
+  (global-auto-revert-mode +1) ; revert buffers automatically when underlying files are changed externally
+  (setq auto-revert-interval 3))
 
 
 (use-package mwheel
@@ -215,9 +225,9 @@ current window, as a ratio between 0 and 1.")
   (setq delete-by-moving-to-trash t)
   (setq ls-lisp-dirs-first t)
   (eval-after-load "dired"
-    #'(lambda ()
-        (put 'dired-find-alternate-file 'disabled nil)
-        (define-key dired-mode-map (kbd "RET") #'dired-find-alternate-file))))
+    (lambda ()
+      (put 'dired-find-alternate-file 'disabled nil)
+      (define-key dired-mode-map (kbd "RET") #'dired-find-alternate-file))))
 
 
 ;; The Emacs default split doesn't seem too intuitive for most users.
@@ -416,6 +426,28 @@ current window, as a ratio between 0 and 1.")
 (use-package sly-overlay)
 
 
+;; (use-package sly-company
+;;   :after sly
+;;   :hook (sly-mode-hook . sly-company-mode)
+;;   :config
+;;   (add-to-list 'company-backends 'sly-company))
+
+
+;; from: https://www.reddit.com/r/Common_Lisp/comments/fyomln/running_mcclim_and_other_lisp_packages_on_windows/
+;; (set-language-environment "UTF-8")
+;; (set-terminal-coding-system 'utf-8)
+;;
+;; (use-package sly
+;;              :ensure t
+;;              :init
+;;              (remove-hook 'lisp-mode-hook 'slime-lisp-mode-hook)
+;;              :config
+;;              (setq sly-net-coding-system 'utf-8-unix)
+;;              (setq sly-lisp-implementations
+;;                    `((sbcl ("c:/msys64/msys2_shell.cmd"  "-defterm" "-mingw64" "-no-start" "-c" "DISPLAY=localhost:0 ros -L sbcl -Q run") :coding-system utf-8-unix))))
+
+
+
 ;; references:
 ;; https://github.com/bradwright/emacs-d/blob/master/packages/init-magit.el
 ;; http://whattheemacsd.com/setup-magit.el-01.html
@@ -557,12 +589,18 @@ current window, as a ratio between 0 and 1.")
           (number-sequence 0 9))))
 
 
-(use-package company-quickhelp
+;; (use-package company-quickhelp
+;;   :after company
+;;   :hook (company-mode . company-quickhelp-local-mode)
+;;   :config
+;;   (setq company-quickhelp-delay 0.5)
+;;   (define-key company-active-map (kbd "M-h") #'company-quickhelp-manual-begin))
+
+
+(use-package company-statistics
   :after company
-  :hook (company-mode . company-quickhelp-local-mode)
   :config
-  (setq company-quickhelp-delay 0.5)
-  (define-key company-active-map (kbd "M-h") #'company-quickhelp-manual-begin))
+  (company-statistics-mode))
 
 
 ;; displays the key bindings following your currently entered incomplete command
@@ -760,7 +798,7 @@ current window, as a ratio between 0 and 1.")
 (global-set-key (kbd "M-<up>") "\C-u1\M-v") ; scroll up
 (global-set-key (kbd "M-<down>") "\C-u1\C-v") ; scroll down
 
-(global-set-key (kbd "C-x k") 'kill-this-buffer)
+(global-set-key (kbd "C-x k") 'kill-current-buffer)
 
 (global-set-key (kbd "C-M-#") (open-file user-init-file))
 (global-set-key (kbd "C-M-$") (open-file "~/.autohotkey/autohotkey.ahk"))
@@ -788,5 +826,6 @@ current window, as a ratio between 0 and 1.")
 
 (define-key isearch-mode-map (kbd "C-d") 'sacha/isearch-yank-current-word) ; Type C-s (isearch-forward) to start interactively searching forward, and type C-x to get the current word.
 
-
-(push "c:/bin/scoop/apps/git/current/usr/bin" exec-path)
+(let ((git-bin "c:/bin/scoop/apps/git/current/usr/bin"))
+  (add-to-list 'exec-path git-bin)
+  (setenv "PATH" (concat git-bin ";" (getenv "PATH"))))
